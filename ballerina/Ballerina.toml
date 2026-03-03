@@ -1,11 +1,11 @@
 [package]
-distribution = "2201.12.0"
+distribution = "2201.13.0"
 org = "ballerinax"
 name = "azure.openai.responses"
 version = "1.0.1"
 license = ["Apache-2.0"]
 authors = ["Ballerina"]
-keywords = ["AI", "Azure", "Cost/Paid", "Azure OpenAI", "Responses", "Vendor/Microsoft"]
+keywords = ["AI", "Azure", "Azure OpenAI", "Responses", "Vendor/Microsoft"]
 icon = "icon.png"
 repository = "https://github.com/ballerina-platform/module-ballerinax-azure.openai.responses"
 

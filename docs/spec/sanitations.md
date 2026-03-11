@@ -1,5 +1,5 @@
 _Authors_: @ballerina-platform \
-_Created_: 2024/08/05 \
+_Created_: 2026/03/03 \
 _Updated_: 2026/03/03 \
 _Edition_: Swan Lake
 
@@ -84,16 +84,4 @@ The following command was used to generate the Ballerina client from the OpenAPI
 ```bash
 bal openapi -i docs/spec/openapi.yaml --mode client --license docs/license.txt -o ballerina
 ```
-Note: The license year is hardcoded to 2024, change if necessary.
-
-## Post-generation filtering
-
-After running the generation command above, the generated `client.bal` and `types.bal` were trimmed to retain only the **Responses API** endpoints:
-
-- `POST /responses` — Create a model response
-- `GET /responses/{response_id}` — Retrieve a model response
-- `DELETE /responses/{response_id}` — Delete a model response
-- `POST /responses/{response_id}/cancel` — Cancel a background model response
-- `GET /responses/{response_id}/input_items` — List input items for a response
-
-All resource functions for other endpoints (batches, chat completions, embeddings, fine-tuning, threads, vector stores, etc.) were removed from `client.bal`. The corresponding type definitions were removed from `types.bal`, keeping only the types required by the Responses API endpoints and the client infrastructure types (`ApiKeysConfig`, `ConnectionConfig`). The `createBodyParts`, `constructEntity`, and `populateEncodingInfo` functions, along with the `mime` import, were removed from `utils.bal` as they are not used by the Responses API.
+Note: The license year is hardcoded to 2026, change if necessary.

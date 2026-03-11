@@ -1,7 +1,7 @@
 # Ballerina Azure OpenAI Responses connector
 
 [![Build](https://github.com/ballerina-platform/module-ballerinax-azure.openai.responses/actions/workflows/ci.yml/badge.svg)](https://github.com/ballerina-platform/module-ballerinax-azure.openai.responses/actions/workflows/ci.yml)
-[![GitHub Last Commit](https://img.shields.io/github/last-commit/ballerina-platform/module-ballerinax-azure.openai.responses.svg)](https://github.com/ballerina-platform/module-ballerinax-azure.openai.responses/commits/master)
+[![GitHub Last Commit](https://img.shields.io/github/last-commit/ballerina-platform/module-ballerinax-azure.openai.responses.svg)](https://github.com/ballerina-platform/module-ballerinax-azure.openai.responses/commits/main)
 [![GitHub Issues](https://img.shields.io/github/issues/ballerina-platform/ballerina-library/module/azure.openai.responses.svg?label=Open%20Issues)](https://github.com/ballerina-platform/ballerina-library/labels/module%2Fazure.openai.responses)
 
 ## Overview
@@ -104,7 +104,7 @@ The `Azure OpenAI Responses` connector provides practical examples illustrating 
 
    > **Note**: Ensure that the Docker daemon is running before executing any tests.
 
-4. Export Github Personal access token with read package permissions as follows:
+4. Export GitHub Personal access token with read package permissions as follows:
 
     ```bash
     export packageUser=<Username>

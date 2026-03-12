@@ -1,9 +1,0 @@
-[package]
-org = "ballerinax_samples"
-name = "background_response"
-version = "0.1.0"
-
-[[dependency]]
-org = "ballerinax"
-name = "azure.openai.responses"
-version = "1.0.0"

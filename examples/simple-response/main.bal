@@ -37,16 +37,8 @@ public function main() returns error? {
     io:println("Created response ID: " + createResponse.id);
     io:println("Status: " + (createResponse.status ?: "unknown"));
 
-    // Retrieve the response by ID
-    responses:inline_response_200_5 retrievedResponse = check azureOpenAI->/responses/[createResponse.id].get();
-    io:println("Retrieved response ID: " + retrievedResponse.id);
-
-    string? outputText = retrievedResponse.output_text;
+    string? outputText = createResponse.output_text;
     if outputText is string {
         io:println("Response text: " + outputText);
     }
-
-    // List input items for the response
-    responses:OpenAI\.ResponseItemList inputItems = check azureOpenAI->/responses/[createResponse.id]/input_items.get();
-    io:println("Number of input items: " + inputItems.data.length().toString());
 }

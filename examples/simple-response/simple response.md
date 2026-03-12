@@ -1,6 +1,6 @@
 # Simple Response
 
-This example demonstrates how to create, retrieve, and list input items for a model response using the Azure OpenAI Responses API.
+This example demonstrates how to create a model response using the Azure OpenAI Responses API.
 
 ## Prerequisites
 
@@ -24,5 +24,4 @@ bal run
 ## What this example does
 
 1. Creates a model response asking the model to explain the Ballerina programming language.
-2. Retrieves the created response by its ID to confirm it was stored.
-3. Lists the input items associated with the response.
+2. Prints the response text.

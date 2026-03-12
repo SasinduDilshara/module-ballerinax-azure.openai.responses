@@ -2,8 +2,7 @@
 
 The `ballerinax/azure.openai.responses` connector provides practical examples illustrating usage in various scenarios. Explore these [examples](https://github.com/ballerina-platform/module-ballerinax-azure.openai.responses/tree/main/examples), covering use cases for the Azure OpenAI Responses API.
 
-1. [Simple response](https://github.com/ballerina-platform/module-ballerinax-azure.openai.responses/tree/main/examples/simple-response) - Create a model response, retrieve it by ID, and list its input items.
-2. [Background response](https://github.com/ballerina-platform/module-ballerinax-azure.openai.responses/tree/main/examples/background-response) - Create a background response and cancel it when no longer needed.
+1. [Simple response](https://github.com/ballerina-platform/module-ballerinax-azure.openai.responses/tree/main/examples/simple-response) - Create a model response using the Azure OpenAI Responses API.
 
 ## Prerequisites
 

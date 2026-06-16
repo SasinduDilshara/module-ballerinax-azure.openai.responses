@@ -49,34 +49,6 @@ These changes are done in order to improve the overall usability, and as workaro
    - **Updated**: Numeric form (OpenAPI 3.0.0)
    - **Reason**: OpenAPI 3.0.0 uses numeric values for exclusive boundaries, not boolean flags.
 
-7. **Made `jailbreak` and `task_adherence` optional in `AzureContentFilterResultsForResponsesAPI`**:
-
-   - **Changed Schema**: `AzureContentFilterResultsForResponsesAPI`
-   - **Original**: `jailbreak` and `task_adherence` listed under `required`
-   - **Updated**: Removed both fields from the `required` array (fields remain present as optional properties)
-   - **Reason**: These fields are not always present in Azure content filter responses. Marking them as required causes deserialization failures when the API omits them.
-
-8. **Made `content_filters` optional in `OpenAI.Response` and inline response schemas**:
-
-   - **Changed Schemas**: Named `OpenAI.Response` component schema and the inline 200 response schemas for `POST /responses`, `GET /responses/{id}`, and `POST /responses/{id}/cancel`
-   - **Original**: `content_filters` listed under `required`
-   - **Updated**: Removed `content_filters` from the `required` array (field remains present as an optional property)
-   - **Reason**: The `content_filters` field is not guaranteed to be present in every response (e.g., when content filtering is not configured or not triggered). Requiring it causes deserialization failures for responses that omit it.
-
-9. **Made `error` and `incomplete_details` optional in `OpenAI.Response` and inline response schemas**:
-
-   - **Changed Schemas**: Named `OpenAI.Response` component schema and the inline 200 response schemas for `POST /responses`, `GET /responses/{id}`, and `POST /responses/{id}/cancel`
-   - **Original**: `error` and `incomplete_details` listed under `required`
-   - **Updated**: Removed both fields from the `required` array (fields remain present as optional properties)
-   - **Reason**: Both fields are `nullable: true` in the spec, meaning the API can return `null` for them. The Ballerina OpenAPI tool maps required+nullable fields as optional (`?`), so the `required` constraint was inconsistent with the generated type and causing a mismatch between the spec and the Ballerina representation.
-
-10. **Removed `tool_choice` from response object schemas**:
-
-    - **Changed Schemas**: Inline 200 response schemas for `POST /responses`, `GET /responses/{id}`, and `POST /responses/{id}/cancel`, and the named `OpenAI.Response` component schema
-    - **Original**: Each response schema included `tool_choice: $ref: '#/components/schemas/OpenAI.ToolChoiceParam'`
-    - **Updated**: The `tool_choice` property was removed from all four response object schemas
-    - **Reason**: `tool_choice` is a request-only parameter (it controls model behaviour during generation). The Responses API does not echo it back in the response body, so including it in response schemas is incorrect and causes the Ballerina code generator to emit a spurious field.
-
 ## OpenAPI cli command
 
 The following command was used to generate the Ballerina client from the OpenAPI specification. The command should be executed from the repository root directory.

@@ -21,8 +21,8 @@ listener http:Listener httpListener = new (9090);
 
 http:Service mockService = service object {
 
-    resource function post responses(@http:Payload OpenAI\.CreateResponse payload) returns json|http:BadRequest {
-        if payload.model is () {
+    resource function post responses(@http:Payload createResponse payload) returns json|http:BadRequest {
+        if payload.model.trim().length() == 0 {
             return http:BAD_REQUEST;
         }
         return {
@@ -32,8 +32,12 @@ http:Service mockService = service object {
             "completed_at": 1723091500,
             "status": "completed",
             "model": payload.model,
+            "tool_choice": "auto",
+            "tools": [],
             "output": [],
             "output_text": "Mock response generated successfully.",
+            "instructions": null,
+            "metadata": null,
             "error": null,
             "incomplete_details": null,
             "usage": {

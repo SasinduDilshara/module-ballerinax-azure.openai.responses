@@ -217,4 +217,3 @@ isolated function getPathForQueryParam(map<anydata> queryParam, map<Encoding> en
     string restOfPath = string:'join("", ...param);
     return restOfPath;
 }
-

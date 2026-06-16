@@ -20,15 +20,16 @@
 import ballerina/data.jsondata;
 import ballerina/http;
 
+# Azure OpenAI APIs for completions and search
 public isolated client class Client {
     final http:Client clientEp;
     final readonly & ApiKeysConfig? apiKeyConfig;
     # Gets invoked to initialize the `connector`.
     #
-    # + config - The configurations to be used when initializing the `connector`
-    # + serviceUrl - URL of the target service
-    # + return - An error if connector initialization failed
-    public isolated function init(ConnectionConfig config, string serviceUrl) returns error? {
+    # + config - The configurations to be used when initializing the `connector` 
+    # + serviceUrl - URL of the target service 
+    # + return - An error if connector initialization failed 
+    public isolated function init(ConnectionConfig config, string serviceUrl = "https://your-resource-name.openai.azure.com/openai") returns error? {
         http:ClientConfiguration httpClientConfig = {httpVersion: config.httpVersion, http1Settings: config.http1Settings, http2Settings: config.http2Settings, timeout: config.timeout, forwarded: config.forwarded, followRedirects: config.followRedirects, poolConfig: config.poolConfig, cache: config.cache, compression: config.compression, circuitBreaker: config.circuitBreaker, retryConfig: config.retryConfig, cookieConfig: config.cookieConfig, responseLimits: config.responseLimits, secureSocket: config.secureSocket, proxy: config.proxy, socketConfig: config.socketConfig, validation: config.validation, laxDataBinding: config.laxDataBinding};
         if config.auth is ApiKeysConfig {
             self.apiKeyConfig = (<ApiKeysConfig>config.auth).cloneReadOnly();
@@ -39,19 +40,22 @@ public isolated client class Client {
         self.clientEp = check new (serviceUrl, httpClientConfig);
     }
 
-    # Creates a model response.
+    # Creates a model response. Provide [text](/docs/guides/text) or
+    # [image](/docs/guides/images) inputs to generate [text](/docs/guides/text)
+    # or [JSON](/docs/guides/structured-outputs) outputs. Have the model call
+    # your own [custom code](/docs/guides/function-calling) or use built-in
+    # [tools](/docs/guides/tools) like [web search](/docs/guides/tools-web-search)
+    # or [file search](/docs/guides/tools-file-search) to use your own data
+    # as input for the model's response.
     #
-    # + headers - Headers to be sent with the request
-    # + queries - Queries to be sent with the request
-    # + return - The request has succeeded.
-    resource isolated function post responses(OpenAI\.CreateResponse payload, map<string|string[]> headers = {}, *CreateResponseQueries queries) returns inline_response_200_5|error {
+    # + headers - Headers to be sent with the request 
+    # + return - OK 
+    resource isolated function post responses(createResponse payload, map<string|string[]> headers = {}) returns response|error {
         string resourcePath = string `/responses`;
         map<anydata> headerValues = {...headers};
         if self.apiKeyConfig is ApiKeysConfig {
             headerValues["api-key"] = self.apiKeyConfig?.api\-key;
-            headerValues["authorization"] = self.apiKeyConfig?.authorization;
         }
-        resourcePath = resourcePath + check getPathForQueryParam(queries);
         map<string|string[]> httpHeaders = http:getHeaderMap(headerValues);
         http:Request request = new;
         json jsonBody = jsondata:toJson(payload);
@@ -59,4 +63,53 @@ public isolated client class Client {
         return self.clientEp->post(resourcePath, request, httpHeaders);
     }
 
+    # Retrieves a model response with the given ID.
+    #
+    # + response_id - The ID of the response to retrieve.
+    # + headers - Headers to be sent with the request 
+    # + queries - Queries to be sent with the request 
+    # + return - OK 
+    resource isolated function get responses/[string response_id](map<string|string[]> headers = {}, *GetResponsesResponseIdQueries queries) returns response|error {
+        string resourcePath = string `/responses/${getEncodedUri(response_id)}`;
+        map<anydata> headerValues = {...headers};
+        if self.apiKeyConfig is ApiKeysConfig {
+            headerValues["api-key"] = self.apiKeyConfig?.api\-key;
+        }
+        map<Encoding> queryParamEncoding = {"include": {style: FORM, explode: true}};
+        resourcePath = resourcePath + check getPathForQueryParam(queries, queryParamEncoding);
+        map<string|string[]> httpHeaders = http:getHeaderMap(headerValues);
+        return self.clientEp->get(resourcePath, httpHeaders);
+    }
+
+    # Deletes a model response with the given ID.
+    #
+    # + response_id - The ID of the response to delete.
+    # + headers - Headers to be sent with the request 
+    # + return - OK 
+    resource isolated function delete responses/[string response_id](map<string|string[]> headers = {}) returns error? {
+        string resourcePath = string `/responses/${getEncodedUri(response_id)}`;
+        map<anydata> headerValues = {...headers};
+        if self.apiKeyConfig is ApiKeysConfig {
+            headerValues["api-key"] = self.apiKeyConfig?.api\-key;
+        }
+        map<string|string[]> httpHeaders = http:getHeaderMap(headerValues);
+        return self.clientEp->delete(resourcePath, headers = httpHeaders);
+    }
+
+    # Returns a list of input items for a given response.
+    #
+    # + response_id - The ID of the response to retrieve input items for.
+    # + headers - Headers to be sent with the request 
+    # + queries - Queries to be sent with the request 
+    # + return - OK 
+    resource isolated function get responses/[string response_id]/input_items(map<string|string[]> headers = {}, *GetResponsesResponseIdInputItemsQueries queries) returns responseItemList|error {
+        string resourcePath = string `/responses/${getEncodedUri(response_id)}/input_items`;
+        map<anydata> headerValues = {...headers};
+        if self.apiKeyConfig is ApiKeysConfig {
+            headerValues["api-key"] = self.apiKeyConfig?.api\-key;
+        }
+        resourcePath = resourcePath + check getPathForQueryParam(queries);
+        map<string|string[]> httpHeaders = http:getHeaderMap(headerValues);
+        return self.clientEp->get(resourcePath, httpHeaders);
+    }
 }

@@ -34,11 +34,11 @@ function initClient() returns Client|error {
     groups: ["live_tests", "mock_tests"]
 }
 isolated function testCreateResponse() returns error? {
-    OpenAI\.CreateResponse request = {
+    createResponse request = {
         model: "gpt-4o-mini",
         input: "This is a test message"
     };
-    inline_response_200_5 response = check azureOpenAI->/responses.post(request);
+    response response = check azureOpenAI->/responses.post(request);
     test:assertTrue(response.id.length() > 0, msg = "Expected a non-empty response ID");
     test:assertEquals(response.'object, "response", msg = "Expected object type to be 'response'");
 }

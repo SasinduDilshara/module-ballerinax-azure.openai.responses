@@ -20,7 +20,7 @@ import ballerina/log;
 listener http:Listener httpListener = new (9090);
 
 // A mock of the Azure OpenAI Responses endpoints. The request body is bound as
-// `map<json>` so the mock accepts any valid `OpenAI.CreateResponse` shape (the
+// `map<json>` so the mock accepts any valid `OpenAICreateResponse` shape (the
 // `input` field can be a plain string or an array of input items) without
 // re-implementing the union data binding on the server side.
 http:Service mockService = service object {
@@ -71,7 +71,7 @@ http:Service mockService = service object {
     }
 };
 
-// Builds a minimal but schema-valid `inline_response_200` payload. `error` and
+// Builds a minimal but schema-valid `InlineResponse200` payload. `error` and
 // `incomplete_details` are returned as `null`, which the relaxed data binding
 // treats as absent (they carry no value on a successful response).
 isolated function buildResponse(string id, string model, string status, string? outputText) returns json {
@@ -89,7 +89,7 @@ isolated function buildResponse(string id, string model, string status, string? 
         "instructions": null,
         "metadata": null,
         // `error` and `incomplete_details` are required (non-nilable) in the
-        // generated `inline_response_200` type, so they must always be present.
+        // generated `InlineResponse200` type, so they must always be present.
         "error": {"code": "server_error", "message": ""},
         "incomplete_details": {},
         "usage": {

@@ -28,12 +28,12 @@ public function main() returns error? {
     }, serviceUrl);
 
     // Create a model response
-    responses:OpenAI\.CreateResponse request = {
+    responses:OpenAICreateResponse request = {
         model: "gpt-4o-mini",
         input: "Explain what the Ballerina programming language is in one sentence."
     };
 
-    responses:inline_response_200 createResponse = check azureOpenAI->/responses.post(request);
+    responses:InlineResponse200 createResponse = check azureOpenAI->/responses.post(request);
     io:println("Created response ID: " + createResponse.id);
     io:println("Status: " + (createResponse.status ?: "unknown"));
 

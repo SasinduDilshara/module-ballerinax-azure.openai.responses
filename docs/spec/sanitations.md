@@ -55,6 +55,17 @@ These changes are done in order to improve the overall usability, and as workaro
    - **Updated**: Numeric form (OpenAPI 3.0.0)
    - **Reason**: OpenAPI 3.0.0 uses numeric values for exclusive boundaries, not boolean flags.
 
+8. **Renamed schemas to Ballerina-friendly type names**:
+
+   - **Changed Schemas**: All schemas whose generated Ballerina type name was not a valid UpperCamelCase identifier.
+   - **Original**:
+      - Schema keys carrying the `OpenAI.` namespace prefix (e.g. `OpenAI.CreateResponse`, `OpenAI.ConversationParam-2`), which the tool emitted as escaped type names (`OpenAI\.CreateResponse`, `OpenAI\.ConversationParam\-2`).
+      - Inline response body and nested object schemas, which the tool auto-named with underscores or a lowercase start (e.g. `inline_response_200`, `inline_response_200_1`, `AzureContentFilterResultsForResponsesAPI_protected_material_code`).
+   - **Updated**:
+      - Dropped the dot (and any other non-alphanumeric char) from namespaced keys, keeping the prefix (`OpenAI.CreateResponse` → `OpenAICreateResponse`, `OpenAI.ConversationParam-2` → `OpenAIConversationParam2`).
+      - Extracted inline schemas into named components with UpperCamelCase names (`inline_response_200` → `InlineResponse200`, `inline_response_200_1` → `InlineResponse2001`, `AzureContentFilterResultsForResponsesAPI_protected_material_code` → `AzureContentFilterResultsForResponsesAPIProtectedMaterialCode`), updating every `$ref`. The `createResponse`, `getResponse`, and `cancelResponse` operations share the identical response shape, so they continue to reference a single `InlineResponse200` type.
+   - **Reason**: Ballerina type names must be valid UpperCamelCase identifiers. Dots, hyphens, underscores, and lowercase starts force backslash-escaped or non-idiomatic type names, which hurts the connector's usability.
+
 ## OpenAPI cli command
 
 The following command was used to generate the Ballerina client from the OpenAPI specification. The command should be executed from the repository root directory.

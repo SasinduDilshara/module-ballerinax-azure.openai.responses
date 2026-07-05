@@ -44,7 +44,7 @@ public isolated client class Client {
     # + headers - Headers to be sent with the request 
     # + queries - Queries to be sent with the request 
     # + return - The request has succeeded. 
-    resource isolated function post responses(OpenAI\.CreateResponse payload, map<string|string[]> headers = {}, *CreateResponseQueries queries) returns inline_response_200|error {
+    resource isolated function post responses(OpenAICreateResponse payload, map<string|string[]> headers = {}, *CreateResponseQueries queries) returns InlineResponse200|error {
         string resourcePath = string `/responses`;
         map<anydata> headerValues = {...headers};
         if self.apiKeyConfig is ApiKeysConfig {
@@ -64,7 +64,7 @@ public isolated client class Client {
     # + headers - Headers to be sent with the request 
     # + queries - Queries to be sent with the request 
     # + return - The request has succeeded. 
-    resource isolated function get responses/[string response_id](map<string|string[]> headers = {}, *GetResponseQueries queries) returns inline_response_200|error {
+    resource isolated function get responses/[string response_id](map<string|string[]> headers = {}, *GetResponseQueries queries) returns InlineResponse200|error {
         string resourcePath = string `/responses/${getEncodedUri(response_id)}`;
         map<anydata> headerValues = {...headers};
         if self.apiKeyConfig is ApiKeysConfig {
@@ -82,7 +82,7 @@ public isolated client class Client {
     # + headers - Headers to be sent with the request 
     # + queries - Queries to be sent with the request 
     # + return - The request has succeeded. 
-    resource isolated function delete responses/[string response_id](map<string|string[]> headers = {}, *DeleteResponseQueries queries) returns inline_response_200_1|error {
+    resource isolated function delete responses/[string response_id](map<string|string[]> headers = {}, *DeleteResponseQueries queries) returns InlineResponse2001|error {
         string resourcePath = string `/responses/${getEncodedUri(response_id)}`;
         map<anydata> headerValues = {...headers};
         if self.apiKeyConfig is ApiKeysConfig {
@@ -99,7 +99,7 @@ public isolated client class Client {
     # + headers - Headers to be sent with the request 
     # + queries - Queries to be sent with the request 
     # + return - The request has succeeded. 
-    resource isolated function post responses/[string response_id]/cancel(map<string|string[]> headers = {}, *CancelResponseQueries queries) returns inline_response_200|error {
+    resource isolated function post responses/[string response_id]/cancel(map<string|string[]> headers = {}, *CancelResponseQueries queries) returns InlineResponse200|error {
         string resourcePath = string `/responses/${getEncodedUri(response_id)}/cancel`;
         map<anydata> headerValues = {...headers};
         if self.apiKeyConfig is ApiKeysConfig {
@@ -117,7 +117,7 @@ public isolated client class Client {
     # + headers - Headers to be sent with the request 
     # + queries - Queries to be sent with the request 
     # + return - The request has succeeded. 
-    resource isolated function get responses/[string response_id]/input_items(map<string|string[]> headers = {}, *ListInputItemsQueries queries) returns OpenAI\.ResponseItemList|error {
+    resource isolated function get responses/[string response_id]/input_items(map<string|string[]> headers = {}, *ListInputItemsQueries queries) returns OpenAIResponseItemList|error {
         string resourcePath = string `/responses/${getEncodedUri(response_id)}/input_items`;
         map<anydata> headerValues = {...headers};
         if self.apiKeyConfig is ApiKeysConfig {

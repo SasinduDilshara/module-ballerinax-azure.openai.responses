@@ -20,53 +20,158 @@
 import ballerina/constraint;
 import ballerina/http;
 
-public type OpenAI\.ContextManagementParam record {
-    string 'type;
-    int? compact_threshold?;
-};
-
-public type OpenAI\.ConversationReference record {
+# Reference to a prompt template and its variables.
+# [Learn more](/docs/guides/text?api-mode=responses#reusable-prompts).
+public type OpenAIPrompt record {
+    # The unique identifier of the prompt template to use.
     string id;
+    string? version?;
+    # Optional map of values to substitute in for variables in your
+    # prompt. The substitution values can either be strings, or other
+    # Response input types like images or files.
+    OpenAIResponsePromptVariables variables?;
 };
 
-public type OpenAI\.OutputItemType string|"output_message"|"file_search_call"|"function_call"|"function_call_output"|"web_search_call"|"computer_call"|"computer_call_output"|"reasoning"|"tool_search_call"|"tool_search_output"|"compaction"|"image_generation_call"|"code_interpreter_call"|"local_shell_call"|"local_shell_call_output"|"shell_call"|"shell_call_output"|"apply_patch_call"|"apply_patch_call_output"|"mcp_call"|"mcp_list_tools"|"mcp_approval_request"|"mcp_approval_response"|"custom_tool_call"|"custom_tool_call_output"|"tool_approval_request";
-
-public type OpenAI\.InputParam string|OpenAI\.InputItem[];
-
-public type OpenAI\.ToolChoiceOptions "none"|"auto"|"required";
-
-public type OpenAI\.ResponseUsage record {
-    int input_tokens;
-    OpenAI\.ResponseUsageInputTokensDetails input_tokens_details;
-    int output_tokens;
-    OpenAI\.ResponseUsageOutputTokensDetails output_tokens_details;
-    int total_tokens;
-};
-
-public type OpenAI\.ItemResource record {
-    OpenAI\.ItemResourceType 'type;
-};
-
-public type OpenAI\.ResponseUsageOutputTokensDetails record {
-    int reasoning_tokens;
-};
+# Specify additional output data to include in the model response. Currently supported values are:
+# - `web_search_call.results`: Include the search results of the web search tool call.
+# - `web_search_call.action.sources`: Include the sources of the web search tool call.
+# - `code_interpreter_call.outputs`: Includes the outputs of python code execution in code interpreter tool call items.
+# - `computer_call_output.output.image_url`: Include image urls from the computer call output.
+# - `file_search_call.results`: Include the search results of the file search tool call.
+# - `message.input_image.image_url`: Include image urls from the input message.
+# - `message.output_text.logprobs`: Include logprobs with assistant messages.
+# - `reasoning.encrypted_content`: Includes an encrypted version of reasoning tokens in reasoning item outputs. This enables reasoning items to be used in multi-turn conversations when using the Responses API statelessly (like when the `store` parameter is set to `false`, or when an organization is enrolled in the zero data retention program).
+public type OpenAIIncludeEnum string|"file_search_call.results"|"web_search_call.results"|"web_search_call.action.sources"|"message.input_image.image_url"|"computer_call_output.output.image_url"|"code_interpreter_call.outputs"|"reasoning.encrypted_content"|"message.output_text.logprobs";
 
 public type AzureAIFoundryModelsApiVersion "v1"|"preview";
 
-# If available, the citation details describing the associated license and its location.
-public type AzureContentFilterResultsForResponsesAPI_protected_material_code_citation record {
-    # The name or identifier of the license associated with the detection.
-    string license?;
-    # The URL associated with the license.
-    string URL?;
+public type OpenAIInputItemType string|"message"|"output_message"|"file_search_call"|"computer_call"|"computer_call_output"|"web_search_call"|"function_call"|"function_call_output"|"tool_search_call"|"tool_search_output"|"reasoning"|"compaction"|"image_generation_call"|"code_interpreter_call"|"local_shell_call"|"local_shell_call_output"|"shell_call"|"shell_call_output"|"apply_patch_call"|"apply_patch_call_output"|"mcp_list_tools"|"mcp_approval_request"|"mcp_approval_response"|"mcp_call"|"custom_tool_call_output"|"custom_tool_call"|"item_reference"|"tool_approval_response";
+
+public type OpenAICreateResponse record {
+    # Set of 16 key-value pairs that can be attached to an object. This can be
+    # useful for storing additional information about the object in a structured
+    # format, and querying for objects via API or the dashboard.
+    # Keys are strings with a maximum length of 64 characters. Values are strings
+    # with a maximum length of 512 characters.
+    OpenAIMetadata metadata?;
+    int? top_logprobs?;
+    decimal? temperature = 1;
+    decimal? top_p = 1;
+    # This field is being replaced by `safety_identifier` and `prompt_cache_key`. Use `prompt_cache_key` instead to maintain caching optimizations.
+    #   A stable identifier for your end-users.
+    #   Used to boost cache hit rates by better bucketing similar requests and  to help OpenAI detect and prevent abuse. [Learn more](/docs/guides/safety-best-practices#safety-identifiers).
+    # 
+    # # Deprecated
+    @deprecated
+    string user?;
+    # A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies.
+    #   The IDs should be a string that uniquely identifies each user, with a maximum length of 64 characters. We recommend hashing their username or email address, in order to avoid sending us any identifying information. [Learn more](/docs/guides/safety-best-practices#safety-identifiers).
+    @constraint:String {maxLength: 64}
+    string safety_identifier?;
+    # Used by OpenAI to cache responses for similar requests to optimize your cache hit rates. Replaces the `user` field. [Learn more](/docs/guides/prompt-caching).
+    string prompt_cache_key?;
+    "in_memory"|"24h"? prompt_cache_retention?;
+    string? previous_response_id?;
+    # Model ID used to generate the response, like `gpt-4o` or `o3`. OpenAI
+    #   offers a wide range of models with different capabilities, performance
+    #   characteristics, and price points. Refer to the [model guide](/docs/models)
+    #   to browse and compare available models.
+    string model?;
+    # **gpt-5 and o-series models only**
+    # Configuration options for
+    # [reasoning models](https://platform.openai.com/docs/guides/reasoning).
+    OpenAIReasoning reasoning?;
+    boolean? background?;
+    int? max_tool_calls?;
+    # Configuration options for a text response from the model. Can be plain
+    # text or structured JSON data. Learn more:
+    # - [Text inputs and outputs](/docs/guides/text)
+    # - [Structured Outputs](/docs/guides/structured-outputs)
+    OpenAIResponseTextParam text?;
+    # An array of tools the model may call while generating a response. You
+    # can specify which tool to use by setting the `tool_choice` parameter.
+    # We support the following categories of tools:
+    # - **Built-in tools**: Tools that are provided by OpenAI that extend the
+    # model's capabilities, like [web search](/docs/guides/tools-web-search)
+    # or [file search](/docs/guides/tools-file-search). Learn more about
+    # [built-in tools](/docs/guides/tools).
+    # - **MCP Tools**: Integrations with third-party systems via custom MCP servers
+    # or predefined connectors such as Google Drive and SharePoint. Learn more about
+    # [MCP Tools](/docs/guides/tools-connectors-mcp).
+    # - **Function calls (custom tools)**: Functions that are defined by you,
+    # enabling the model to call your own code with strongly typed arguments
+    # and outputs. Learn more about
+    # [function calling](/docs/guides/function-calling). You can also use
+    # custom tools to call your own code.
+    OpenAIToolsArray tools?;
+    OpenAIToolChoiceOptions|OpenAIToolChoiceParam tool_choice?;
+    # Reference to a prompt template and its variables.
+    # [Learn more](/docs/guides/text?api-mode=responses#reusable-prompts).
+    OpenAIPrompt prompt?;
+    "auto"|"disabled"? truncation = "disabled";
+    # Text, image, or file inputs to the model, used to generate a response.
+    # Learn more:
+    # - [Text inputs and outputs](/docs/guides/text)
+    # - [Image inputs](/docs/guides/images)
+    # - [File inputs](/docs/guides/pdf-files)
+    # - [Conversation state](/docs/guides/conversation-state)
+    # - [Function calling](/docs/guides/function-calling)
+    OpenAIInputParam input?;
+    OpenAIIncludeEnum[]? include?;
+    boolean? parallel_tool_calls = true;
+    boolean? store = true;
+    string? instructions?;
+    boolean? 'stream?;
+    # Options for streaming responses. Only set this when you set `stream: true`.
+    OpenAIResponseStreamOptions stream_options?;
+    # The conversation that this response belongs to. Items from this conversation are prepended to `input_items` for this response request.
+    # Input items and output items from this response are automatically added to this conversation after this response completes.
+    OpenAIConversationParam conversation?;
+    # Context management configuration for this request.
+    OpenAIContextManagementParam[]? context_management?;
+    int? max_output_tokens?;
 };
 
-public type OpenAI\.ToolsArray OpenAI\.Tool[];
+public type OpenAIResponseUsageInputTokensDetails record {
+    int cached_tokens;
+};
+
+public type OpenAIResponseUsageOutputTokensDetails record {
+    int reasoning_tokens;
+};
 
 public type AzureContentFilterResultOffsets record {
     int:Signed32 start_offset;
     int:Signed32 end_offset;
     int:Signed32 check_offset;
+};
+
+# Controls which (if any) tool is called by the model.
+# `none` means the model will not call any tool and instead generates a message.
+# `auto` means the model can pick between generating a message or calling one or
+# more tools.
+# `required` means the model must call one or more tools.
+public type OpenAIToolChoiceOptions "none"|"auto"|"required";
+
+# Configuration options for a text response from the model. Can be plain
+# text or structured JSON data. Learn more:
+# - [Text inputs and outputs](/docs/guides/text)
+# - [Structured Outputs](/docs/guides/structured-outputs)
+public type OpenAIResponseTextParam record {
+    # An object specifying the format that the model must output.
+    # Configuring `{ "type": "json_schema" }` enables Structured Outputs,
+    # which ensures the model will match your supplied JSON schema. Learn more in the
+    # [Structured Outputs guide](/docs/guides/structured-outputs).
+    # The default format is `{ "type": "text" }` with no additional options.
+    # *Not recommended for gpt-4o and newer models:**
+    # Setting to `{ "type": "json_object" }` enables the older JSON mode, which
+    # ensures the message the model generates is valid JSON. Using `json_schema`
+    # is preferred for models that support it.
+    OpenAITextResponseFormatConfiguration format?;
+    # Constrains the verbosity of the model's response. Lower values will result in
+    # more concise responses, while higher values will result in more verbose responses.
+    # Currently supported values are `low`, `medium`, and `high`.
+    OpenAIVerbosity? verbosity?;
 };
 
 # Represents the Queries record for the operation: cancelResponse
@@ -76,14 +181,10 @@ public type CancelResponseQueries record {
     AzureAIFoundryModelsApiVersion api\-version?;
 };
 
-public type OpenAI\.IncludeEnum string|"file_search_call.results"|"web_search_call.results"|"web_search_call.action.sources"|"message.input_image.image_url"|"computer_call_output.output.image_url"|"code_interpreter_call.outputs"|"reasoning.encrypted_content"|"message.output_text.logprobs";
-
-public type OpenAI\.ResponseIncompleteDetails record {
-    "max_output_tokens"|"content_filter" reason?;
-};
-
-public type OpenAI\.OutputItem record {
-    OpenAI\.OutputItemType 'type;
+# The conversation that this response belongs to.
+public type OpenAIConversationParam2 record {
+    # The unique ID of the conversation.
+    string id;
 };
 
 # Provides a set of configurations for controlling the behaviours when communicating with a remote HTTP endpoint.
@@ -130,6 +231,12 @@ public type ConnectionConfig record {|
     boolean laxDataBinding = true;
 |};
 
+# The conversation that this response belonged to. Input items and output items from this response were automatically added to this conversation.
+public type OpenAIConversationReference record {
+    # The unique ID of the conversation that this response was associated with.
+    string id;
+};
+
 public type AzureContentFilterCompletionTextSpanDetectionResult record {
     # Whether the content detection resulted in a content filtering action.
     boolean filtered;
@@ -139,6 +246,21 @@ public type AzureContentFilterCompletionTextSpanDetectionResult record {
     AzureContentFilterCompletionTextSpan[] details;
 };
 
+public type OpenAITextResponseFormatConfigurationType string|"text"|"json_schema"|"json_object";
+
+# An object specifying the format that the model must output.
+# Configuring `{ "type": "json_schema" }` enables Structured Outputs,
+# which ensures the model will match your supplied JSON schema. Learn more in the
+# [Structured Outputs guide](/docs/guides/structured-outputs).
+# The default format is `{ "type": "text" }` with no additional options.
+# *Not recommended for gpt-4o and newer models:**
+# Setting to `{ "type": "json_object" }` enables the older JSON mode, which
+# ensures the message the model generates is valid JSON. Using `json_schema`
+# is preferred for models that support it.
+public type OpenAITextResponseFormatConfiguration record {
+    OpenAITextResponseFormatConfigurationType 'type;
+};
+
 # Represents the Queries record for the operation: createResponse
 public type CreateResponseQueries record {
     # The explicit Azure AI Foundry Models API version to use for this request.
@@ -146,19 +268,25 @@ public type CreateResponseQueries record {
     AzureAIFoundryModelsApiVersion api\-version?;
 };
 
-public type AzureContentFilterCustomTopicResult_details record {
+public type OpenAIToolType string|"function"|"file_search"|"computer"|"computer_use_preview"|"web_search"|"mcp"|"code_interpreter"|"image_generation"|"local_shell"|"shell"|"custom"|"namespace"|"tool_search"|"web_search_preview"|"apply_patch";
+
+public type OpenAIItemResourceType string|"message"|"output_message"|"file_search_call"|"computer_call"|"computer_call_output"|"web_search_call"|"function_call"|"function_call_output"|"tool_search_call"|"tool_search_output"|"reasoning"|"compaction"|"image_generation_call"|"code_interpreter_call"|"local_shell_call"|"local_shell_call_output"|"shell_call"|"shell_call_output"|"apply_patch_call"|"apply_patch_call_output"|"mcp_list_tools"|"mcp_approval_request"|"mcp_approval_response"|"mcp_call"|"custom_tool_call"|"custom_tool_call_output";
+
+public type AzureContentFilterCustomTopicResultDetails record {
     # A value indicating whether the topic is detected.
     boolean detected;
     # The ID of the custom topic evaluated.
     string id;
 };
 
-public type OpenAI\.ResponseTextParam record {
-    OpenAI\.TextResponseFormatConfiguration format?;
-    OpenAI\.Verbosity? verbosity?;
-};
-
-public type OpenAI\.TextResponseFormatConfigurationType string|"text"|"json_schema"|"json_object";
+# Text, image, or file inputs to the model, used to generate a response.
+# Learn more:
+# - [Text inputs and outputs](/docs/guides/text)
+# - [Image inputs](/docs/guides/images)
+# - [File inputs](/docs/guides/pdf-files)
+# - [Conversation state](/docs/guides/conversation-state)
+# - [Function calling](/docs/guides/function-calling)
+public type OpenAIInputParam string|OpenAIInputItem[];
 
 # A labeled content filter result item that indicates whether the content was detected and whether the content was
 # filtered.
@@ -169,26 +297,74 @@ public type AzureContentFilterDetectionResult record {
     boolean detected;
 };
 
-public type OpenAI\.ResponseUsageInputTokensDetails record {
-    int cached_tokens;
+# A list of Response items.
+public type OpenAIResponseItemList record {
+    # The type of object returned, must be `list`.
+    "list" 'object;
+    # A list of items used to generate this response.
+    OpenAIItemResource[] data;
+    # Whether there are more items available.
+    boolean has_more;
+    # The ID of the first item in the list.
+    string first_id;
+    # The ID of the last item in the list.
+    string last_id;
 };
 
-public type inline_response_200_1 record {
-    "response.deleted" 'object;
-    string id;
-    true deleted;
+# Constrains effort on reasoning for
+# [reasoning models](https://platform.openai.com/docs/guides/reasoning).
+# Currently supported values are `none`, `minimal`, `low`, `medium`, `high`, and `xhigh`. Reducing
+# reasoning effort can result in faster responses and fewer tokens used
+# on reasoning in a response.
+# - `gpt-5.1` defaults to `none`, which does not perform reasoning. The supported reasoning values for `gpt-5.1` are `none`, `low`, `medium`, and `high`. Tool calls are supported for all reasoning values in gpt-5.1.
+# - All models before `gpt-5.1` default to `medium` reasoning effort, and do not support `none`.
+# - The `gpt-5-pro` model defaults to (and only supports) `high` reasoning effort.
+# - `xhigh` is supported for all models after `gpt-5.1-codex-max`.
+public type OpenAIReasoningEffort "none"|"minimal"|"low"|"medium"|"high"|"xhigh"?;
+
+# Content item used to generate a response.
+public type OpenAIItemResource record {
+    OpenAIItemResourceType 'type;
 };
 
-public type AzureContentFilterBlocklistResult_details record {
-    # A value indicating whether the blocklist produced a filtering action.
+# Set of 16 key-value pairs that can be attached to an object. This can be
+# useful for storing additional information about the object in a structured
+# format, and querying for objects via API or the dashboard.
+# Keys are strings with a maximum length of 64 characters. Values are strings
+# with a maximum length of 512 characters.
+public type OpenAIMetadata record {
+};
+
+# Options for streaming responses. Only set this when you set `stream: true`.
+public type OpenAIResponseStreamOptions record {
+    # When true, stream obfuscation will be enabled. Stream obfuscation adds
+    #   random characters to an `obfuscation` field on streaming delta events to
+    #   normalize payload sizes as a mitigation to certain side-channel attacks.
+    #   These obfuscation fields are included by default, but add a small amount
+    #   of overhead to the data stream. You can set `include_obfuscation` to
+    #   false to optimize for bandwidth if you trust the network links between
+    #   your application and the OpenAI API.
+    boolean include_obfuscation?;
+};
+
+# Constrains the verbosity of the model's response. Lower values will result in
+# more concise responses, while higher values will result in more verbose responses.
+# Currently supported values are `low`, `medium`, and `high`.
+public type OpenAIVerbosity "low"|"medium"|"high"?;
+
+# A detection result that describes a match against licensed code or other protected source material.
+public type AzureContentFilterResultsForResponsesAPIProtectedMaterialCode record {
+    # Whether the content detection resulted in a content filtering action.
     boolean filtered;
-    # The ID of the custom blocklist evaluated.
-    string id;
+    # Whether the labeled content category was detected in the content.
+    boolean detected;
+    # If available, the citation details describing the associated license and its location.
+    AzureContentFilterResultsForResponsesAPIProtectedMaterialCodeCitation citation?;
 };
 
-public type OpenAI\.ResponseError record {
-    OpenAI\.ResponseErrorCode code;
-    string message;
+# A tool that can be used to generate a response.
+public type OpenAITool record {
+    OpenAIToolType 'type;
 };
 
 # Provides API key configurations needed when communicating with a remote HTTP endpoint.
@@ -197,13 +373,34 @@ public type ApiKeysConfig record {|
     string authorization;
 |};
 
-public type OpenAI\.TextResponseFormatConfiguration record {
-    OpenAI\.TextResponseFormatConfigurationType 'type;
+# An array of tools the model may call while generating a response. You
+# can specify which tool to use by setting the `tool_choice` parameter.
+# We support the following categories of tools:
+# - **Built-in tools**: Tools that are provided by OpenAI that extend the
+# model's capabilities, like [web search](/docs/guides/tools-web-search)
+# or [file search](/docs/guides/tools-file-search). Learn more about
+# [built-in tools](/docs/guides/tools).
+# - **MCP Tools**: Integrations with third-party systems via custom MCP servers
+# or predefined connectors such as Google Drive and SharePoint. Learn more about
+# [MCP Tools](/docs/guides/tools-connectors-mcp).
+# - **Function calls (custom tools)**: Functions that are defined by you,
+# enabling the model to call your own code with strongly typed arguments
+# and outputs. Learn more about
+# [function calling](/docs/guides/function-calling). You can also use
+# custom tools to call your own code.
+public type OpenAIToolsArray OpenAITool[];
+
+# If present, details about an error that prevented content filtering from completing its evaluation.
+public type AzureContentFilterResultsForResponsesAPIError record {
+    # A distinct, machine-readable code associated with the error.
+    int:Signed32 code;
+    # A human-readable message associated with the error.
+    string message;
 };
 
-public type OpenAI\.ResponseStreamOptions record {
-    boolean include_obfuscation?;
-};
+# The conversation that this response belongs to. Items from this conversation are prepended to `input_items` for this response request.
+# Input items and output items from this response are automatically added to this conversation after this response completes.
+public type OpenAIConversationParam string|OpenAIConversationParam2;
 
 # Represents the Queries record for the operation: deleteResponse
 public type DeleteResponseQueries record {
@@ -217,7 +414,104 @@ public type AzureContentFilterCustomTopicResult record {
     # A value indicating whether any of the detailed topics resulted in a filtering action.
     boolean filtered;
     # The pairs of individual topic IDs and whether they are detected.
-    AzureContentFilterCustomTopicResult_details[] details?;
+    AzureContentFilterCustomTopicResultDetails[] details?;
+};
+
+public type InlineResponse200 record {
+    # Set of 16 key-value pairs that can be attached to an object. This can be
+    # useful for storing additional information about the object in a structured
+    # format, and querying for objects via API or the dashboard.
+    # Keys are strings with a maximum length of 64 characters. Values are strings
+    # with a maximum length of 512 characters.
+    OpenAIMetadata metadata?;
+    int? top_logprobs?;
+    decimal? temperature = 1;
+    decimal? top_p = 1;
+    # This field is being replaced by `safety_identifier` and `prompt_cache_key`. Use `prompt_cache_key` instead to maintain caching optimizations.
+    #   A stable identifier for your end-users.
+    #   Used to boost cache hit rates by better bucketing similar requests and  to help OpenAI detect and prevent abuse. [Learn more](/docs/guides/safety-best-practices#safety-identifiers).
+    # 
+    # # Deprecated
+    @deprecated
+    string user?;
+    # A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies.
+    #   The IDs should be a string that uniquely identifies each user, with a maximum length of 64 characters. We recommend hashing their username or email address, in order to avoid sending us any identifying information. [Learn more](/docs/guides/safety-best-practices#safety-identifiers).
+    @constraint:String {maxLength: 64}
+    string safety_identifier?;
+    # Used by OpenAI to cache responses for similar requests to optimize your cache hit rates. Replaces the `user` field. [Learn more](/docs/guides/prompt-caching).
+    string prompt_cache_key?;
+    "in_memory"|"24h"? prompt_cache_retention?;
+    string? previous_response_id?;
+    # Model ID used to generate the response, like `gpt-4o` or `o3`. OpenAI
+    #   offers a wide range of models with different capabilities, performance
+    #   characteristics, and price points. Refer to the [model guide](/docs/models)
+    #   to browse and compare available models.
+    string model?;
+    # **gpt-5 and o-series models only**
+    # Configuration options for
+    # [reasoning models](https://platform.openai.com/docs/guides/reasoning).
+    OpenAIReasoning reasoning?;
+    boolean? background?;
+    int? max_tool_calls?;
+    # Configuration options for a text response from the model. Can be plain
+    # text or structured JSON data. Learn more:
+    # - [Text inputs and outputs](/docs/guides/text)
+    # - [Structured Outputs](/docs/guides/structured-outputs)
+    OpenAIResponseTextParam text?;
+    # An array of tools the model may call while generating a response. You
+    # can specify which tool to use by setting the `tool_choice` parameter.
+    # We support the following categories of tools:
+    # - **Built-in tools**: Tools that are provided by OpenAI that extend the
+    # model's capabilities, like [web search](/docs/guides/tools-web-search)
+    # or [file search](/docs/guides/tools-file-search). Learn more about
+    # [built-in tools](/docs/guides/tools).
+    # - **MCP Tools**: Integrations with third-party systems via custom MCP servers
+    # or predefined connectors such as Google Drive and SharePoint. Learn more about
+    # [MCP Tools](/docs/guides/tools-connectors-mcp).
+    # - **Function calls (custom tools)**: Functions that are defined by you,
+    # enabling the model to call your own code with strongly typed arguments
+    # and outputs. Learn more about
+    # [function calling](/docs/guides/function-calling). You can also use
+    # custom tools to call your own code.
+    OpenAIToolsArray tools?;
+    OpenAIToolChoiceOptions|OpenAIToolChoiceParam tool_choice?;
+    # Reference to a prompt template and its variables.
+    # [Learn more](/docs/guides/text?api-mode=responses#reusable-prompts).
+    OpenAIPrompt prompt?;
+    "auto"|"disabled"? truncation = "disabled";
+    # Unique identifier for this Response.
+    string id;
+    # The object type of this resource - always set to `response`.
+    "response" 'object;
+    # The status of the response generation. One of `completed`, `failed`,
+    #   `in_progress`, `cancelled`, `queued`, or `incomplete`.
+    "completed"|"failed"|"in_progress"|"cancelled"|"queued"|"incomplete" status?;
+    # Unix timestamp (in seconds) of when this Response was created.
+    int created_at;
+    string? completed_at?;
+    # An error object returned when the model fails to generate a Response.
+    OpenAIResponseError 'error;
+    OpenAIResponseIncompleteDetails incomplete_details;
+    # An array of content items generated by the model.
+    #   - The length and order of items in the `output` array is dependent
+    #   on the model's response.
+    #   - Rather than accessing the first item in the `output` array and
+    #   assuming it's an `assistant` message with the content generated by
+    #   the model, you might consider using the `output_text` property where
+    #   supported in SDKs.
+    OpenAIOutputItem[] output;
+    string|OpenAIInputItem[]? instructions;
+    string? output_text?;
+    # Represents token usage details including input tokens, output tokens,
+    # a breakdown of output tokens, and the total tokens used.
+    OpenAIResponseUsage usage?;
+    # Whether to allow the model to run tool calls in parallel.
+    boolean parallel_tool_calls = true;
+    # The conversation that this response belonged to. Input items and output items from this response were automatically added to this conversation.
+    OpenAIConversationReference conversation?;
+    int? max_output_tokens?;
+    # The content filter results from RAI.
+    AzureContentFilterForResponsesAPI[] content_filters?;
 };
 
 public type AzureContentFilterForResponsesAPI record {
@@ -253,7 +547,8 @@ public type ListInputItemsQueries record {
     "asc"|"desc" 'order?;
 };
 
-public type OpenAI\.ResponsePromptVariables record {
+public type OpenAIResponseIncompleteDetails record {
+    "max_output_tokens"|"content_filter" reason?;
 };
 
 # Represents the Queries record for the operation: getResponse
@@ -266,31 +561,16 @@ public type GetResponseQueries record {
     # The sequence number of the event after which to start streaming.
     int:Signed32 starting_after?;
     # Additional fields to include in the response. See the include parameter for Response creation above for more information.
-    OpenAI\.IncludeEnum[] include\[\] = [];
+    OpenAIIncludeEnum[] include\[\] = [];
     # When true, stream obfuscation will be enabled. Stream obfuscation adds random characters to an `obfuscation` field on streaming delta events to normalize payload sizes as a mitigation to certain side-channel attacks. These obfuscation fields are included by default, but add a small amount of overhead to the data stream. You can set `include_obfuscation` to false to optimize for bandwidth if you trust the network links between your application and the OpenAI API.
     boolean include_obfuscation = true;
 };
 
-public type OpenAI\.ResponseErrorCode "server_error"|"rate_limit_exceeded"|"invalid_prompt"|"vector_store_timeout"|"invalid_image"|"invalid_image_format"|"invalid_base64_image"|"invalid_image_url"|"image_too_large"|"image_too_small"|"image_parse_error"|"image_content_policy_violation"|"invalid_image_mode"|"image_file_too_large"|"unsupported_image_media_type"|"empty_image_file"|"failed_to_download_image"|"image_file_not_found";
-
-# A detection result that describes a match against licensed code or other protected source material.
-public type AzureContentFilterResultsForResponsesAPI_protected_material_code record {
-    # Whether the content detection resulted in a content filtering action.
+public type AzureContentFilterBlocklistResultDetails record {
+    # A value indicating whether the blocklist produced a filtering action.
     boolean filtered;
-    # Whether the labeled content category was detected in the content.
-    boolean detected;
-    # If available, the citation details describing the associated license and its location.
-    AzureContentFilterResultsForResponsesAPI_protected_material_code_citation citation?;
-};
-
-public type OpenAI\.Verbosity "low"|"medium"|"high"?;
-
-# If present, details about an error that prevented content filtering from completing its evaluation.
-public type AzureContentFilterResultsForResponsesAPI_error record {
-    # A distinct, machine-readable code associated with the error.
-    int:Signed32 code;
-    # A human-readable message associated with the error.
-    string message;
+    # The ID of the custom blocklist evaluated.
+    string id;
 };
 
 # A representation of a span of completion text as used by Azure OpenAI content filter results.
@@ -300,105 +580,6 @@ public type AzureContentFilterCompletionTextSpan record {
     # Offset of the first UTF32 code point which is excluded from the span. This field is always equal to completion_start_offset for empty spans. This field is always larger than completion_start_offset for non-empty spans.
     int:Signed32 completion_end_offset;
 };
-
-public type inline_response_200 record {
-    # Set of 16 key-value pairs that can be attached to an object. This can be
-    # useful for storing additional information about the object in a structured
-    # format, and querying for objects via API or the dashboard.
-    # Keys are strings with a maximum length of 64 characters. Values are strings
-    # with a maximum length of 512 characters.
-    OpenAI\.Metadata metadata?;
-    int? top_logprobs?;
-    decimal? temperature = 1;
-    decimal? top_p = 1;
-    # This field is being replaced by `safety_identifier` and `prompt_cache_key`. Use `prompt_cache_key` instead to maintain caching optimizations.
-    #   A stable identifier for your end-users.
-    #   Used to boost cache hit rates by better bucketing similar requests and  to help OpenAI detect and prevent abuse. [Learn more](/docs/guides/safety-best-practices#safety-identifiers).
-    # 
-    # # Deprecated
-    @deprecated
-    string user?;
-    # A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies.
-    #   The IDs should be a string that uniquely identifies each user, with a maximum length of 64 characters. We recommend hashing their username or email address, in order to avoid sending us any identifying information. [Learn more](/docs/guides/safety-best-practices#safety-identifiers).
-    @constraint:String {maxLength: 64}
-    string safety_identifier?;
-    # Used by OpenAI to cache responses for similar requests to optimize your cache hit rates. Replaces the `user` field. [Learn more](/docs/guides/prompt-caching).
-    string prompt_cache_key?;
-    "in_memory"|"24h"? prompt_cache_retention?;
-    string? previous_response_id?;
-    # Model ID used to generate the response, like `gpt-4o` or `o3`. OpenAI
-    #   offers a wide range of models with different capabilities, performance
-    #   characteristics, and price points. Refer to the [model guide](/docs/models)
-    #   to browse and compare available models.
-    string model?;
-    # **gpt-5 and o-series models only**
-    # Configuration options for
-    # [reasoning models](https://platform.openai.com/docs/guides/reasoning).
-    OpenAI\.Reasoning reasoning?;
-    boolean? background?;
-    int? max_tool_calls?;
-    # Configuration options for a text response from the model. Can be plain
-    # text or structured JSON data. Learn more:
-    # - [Text inputs and outputs](/docs/guides/text)
-    # - [Structured Outputs](/docs/guides/structured-outputs)
-    OpenAI\.ResponseTextParam text?;
-    # An array of tools the model may call while generating a response. You
-    # can specify which tool to use by setting the `tool_choice` parameter.
-    # We support the following categories of tools:
-    # - **Built-in tools**: Tools that are provided by OpenAI that extend the
-    # model's capabilities, like [web search](/docs/guides/tools-web-search)
-    # or [file search](/docs/guides/tools-file-search). Learn more about
-    # [built-in tools](/docs/guides/tools).
-    # - **MCP Tools**: Integrations with third-party systems via custom MCP servers
-    # or predefined connectors such as Google Drive and SharePoint. Learn more about
-    # [MCP Tools](/docs/guides/tools-connectors-mcp).
-    # - **Function calls (custom tools)**: Functions that are defined by you,
-    # enabling the model to call your own code with strongly typed arguments
-    # and outputs. Learn more about
-    # [function calling](/docs/guides/function-calling). You can also use
-    # custom tools to call your own code.
-    OpenAI\.ToolsArray tools?;
-    OpenAI\.ToolChoiceOptions|OpenAI\.ToolChoiceParam tool_choice?;
-    # Reference to a prompt template and its variables.
-    # [Learn more](/docs/guides/text?api-mode=responses#reusable-prompts).
-    OpenAI\.Prompt prompt?;
-    "auto"|"disabled"? truncation = "disabled";
-    # Unique identifier for this Response.
-    string id;
-    # The object type of this resource - always set to `response`.
-    "response" 'object;
-    # The status of the response generation. One of `completed`, `failed`,
-    #   `in_progress`, `cancelled`, `queued`, or `incomplete`.
-    "completed"|"failed"|"in_progress"|"cancelled"|"queued"|"incomplete" status?;
-    # Unix timestamp (in seconds) of when this Response was created.
-    int created_at;
-    string? completed_at?;
-    # An error object returned when the model fails to generate a Response.
-    OpenAI\.ResponseError 'error;
-    OpenAI\.ResponseIncompleteDetails incomplete_details;
-    # An array of content items generated by the model.
-    #   - The length and order of items in the `output` array is dependent
-    #   on the model's response.
-    #   - Rather than accessing the first item in the `output` array and
-    #   assuming it's an `assistant` message with the content generated by
-    #   the model, you might consider using the `output_text` property where
-    #   supported in SDKs.
-    OpenAI\.OutputItem[] output;
-    string|OpenAI\.InputItem[]? instructions;
-    string? output_text?;
-    # Represents token usage details including input tokens, output tokens,
-    # a breakdown of output tokens, and the total tokens used.
-    OpenAI\.ResponseUsage usage?;
-    # Whether to allow the model to run tool calls in parallel.
-    boolean parallel_tool_calls = true;
-    # The conversation that this response belonged to. Input items and output items from this response were automatically added to this conversation.
-    OpenAI\.ConversationReference conversation?;
-    int? max_output_tokens?;
-    # The content filter results from RAI.
-    AzureContentFilterForResponsesAPI[] content_filters?;
-};
-
-public type OpenAI\.ConversationParam string|OpenAI\.ConversationParam\-2;
 
 public type AzureContentFilterResultsForResponsesAPI record {
     # A content filter category for language related to anatomical organs and genitals, romantic relationships, acts
@@ -425,7 +606,7 @@ public type AzureContentFilterResultsForResponsesAPI record {
     # A collection of binary filtering outcomes for configured custom topics.
     AzureContentFilterCustomTopicResult custom_topics?;
     # If present, details about an error that prevented content filtering from completing its evaluation.
-    AzureContentFilterResultsForResponsesAPI_error 'error?;
+    AzureContentFilterResultsForResponsesAPIError 'error?;
     # A detection result that describes user prompt injection attacks, where malicious users deliberately exploit
     # system vulnerabilities to elicit unauthorized behavior from the LLM. This could lead to inappropriate content
     # generation or violations of system-imposed restrictions.
@@ -435,7 +616,7 @@ public type AzureContentFilterResultsForResponsesAPI record {
     # A detection result that describes a match against text protected under copyright or other status.
     AzureContentFilterDetectionResult protected_material_text?;
     # A detection result that describes a match against licensed code or other protected source material.
-    AzureContentFilterResultsForResponsesAPI_protected_material_code protected_material_code?;
+    AzureContentFilterResultsForResponsesAPIProtectedMaterialCode protected_material_code?;
     AzureContentFilterCompletionTextSpanDetectionResult ungrounded_material?;
     # A detection result that describes matches against Personal Identifiable Information with configurable subcategories.
     AzureContentFilterPersonallyIdentifiableInformationResult personally_identifiable_information?;
@@ -445,24 +626,30 @@ public type AzureContentFilterResultsForResponsesAPI record {
     AzureContentFilterDetectionResult indirect_attack?;
 };
 
-public type OpenAI\.ToolChoiceParam record {
-    OpenAI\.ToolChoiceParamType 'type;
-};
-
-public type OpenAI\.Tool record {
-    OpenAI\.ToolType 'type;
-};
-
-public type OpenAI\.ReasoningEffort "none"|"minimal"|"low"|"medium"|"high"|"xhigh"?;
+public type OpenAIOutputItemType string|"output_message"|"file_search_call"|"function_call"|"function_call_output"|"web_search_call"|"computer_call"|"computer_call_output"|"reasoning"|"tool_search_call"|"tool_search_output"|"compaction"|"image_generation_call"|"code_interpreter_call"|"local_shell_call"|"local_shell_call_output"|"shell_call"|"shell_call_output"|"apply_patch_call"|"apply_patch_call_output"|"mcp_call"|"mcp_list_tools"|"mcp_approval_request"|"mcp_approval_response"|"custom_tool_call"|"custom_tool_call_output"|"tool_approval_request";
 
 # A content filter detection result for Personally Identifiable Information that includes harm extensions.
 public type AzureContentFilterPersonallyIdentifiableInformationResult AzureContentFilterDetectionResult;
 
-public type OpenAI\.ItemResourceType string|"message"|"output_message"|"file_search_call"|"computer_call"|"computer_call_output"|"web_search_call"|"function_call"|"function_call_output"|"tool_search_call"|"tool_search_output"|"reasoning"|"compaction"|"image_generation_call"|"code_interpreter_call"|"local_shell_call"|"local_shell_call_output"|"shell_call"|"shell_call_output"|"apply_patch_call"|"apply_patch_call_output"|"mcp_list_tools"|"mcp_approval_request"|"mcp_approval_response"|"mcp_call"|"custom_tool_call"|"custom_tool_call_output";
+# The error code for the response.
+public type OpenAIResponseErrorCode "server_error"|"rate_limit_exceeded"|"invalid_prompt"|"vector_store_timeout"|"invalid_image"|"invalid_image_format"|"invalid_base64_image"|"invalid_image_url"|"image_too_large"|"image_too_small"|"image_parse_error"|"image_content_policy_violation"|"invalid_image_mode"|"image_file_too_large"|"unsupported_image_media_type"|"empty_image_file"|"failed_to_download_image"|"image_file_not_found";
 
-public type OpenAI\.InputItemType string|"message"|"output_message"|"file_search_call"|"computer_call"|"computer_call_output"|"web_search_call"|"function_call"|"function_call_output"|"tool_search_call"|"tool_search_output"|"reasoning"|"compaction"|"image_generation_call"|"code_interpreter_call"|"local_shell_call"|"local_shell_call_output"|"shell_call"|"shell_call_output"|"apply_patch_call"|"apply_patch_call_output"|"mcp_list_tools"|"mcp_approval_request"|"mcp_approval_response"|"mcp_call"|"custom_tool_call_output"|"custom_tool_call"|"item_reference"|"tool_approval_response";
+public type OpenAIOutputItem record {
+    OpenAIOutputItemType 'type;
+};
 
-public type OpenAI\.Metadata record {
+public type OpenAIToolChoiceParamType string|"allowed_tools"|"function"|"mcp"|"custom"|"apply_patch"|"shell"|"file_search"|"web_search_preview"|"computer_use_preview"|"web_search_preview_2025_03_11"|"image_generation"|"code_interpreter"|"computer"|"computer_use";
+
+# Optional map of values to substitute in for variables in your
+# prompt. The substitution values can either be strings, or other
+# Response input types like images or files.
+public type OpenAIResponsePromptVariables record {
+};
+
+public type OpenAIContextManagementParam record {
+    # The context management entry type. Currently only 'compaction' is supported.
+    string 'type;
+    int? compact_threshold?;
 };
 
 # A labeled content filter result item that indicates whether the content was filtered and what the qualitative
@@ -474,73 +661,79 @@ public type AzureContentFilterSeverityResult record {
     "safe"|"low"|"medium"|"high" severity;
 };
 
-public type OpenAI\.InputItem record {
-    OpenAI\.InputItemType 'type;
-};
-
-public type OpenAI\.ResponseItemList record {
-    "list" 'object;
-    OpenAI\.ItemResource[] data;
-    boolean has_more;
-    string first_id;
-    string last_id;
-};
-
-public type OpenAI\.Reasoning record {
-    OpenAI\.ReasoningEffort? effort?;
-    "auto"|"concise"|"detailed"? summary?;
-    "auto"|"concise"|"detailed"? generate_summary?;
-};
-
-public type OpenAI\.CreateResponse record {
-    OpenAI\.Metadata metadata?;
-    int? top_logprobs?;
-    decimal? temperature = 1;
-    decimal? top_p = 1;
-    string user?;
-    string safety_identifier?;
-    string prompt_cache_key?;
-    "in_memory"|"24h"? prompt_cache_retention?;
-    string? previous_response_id?;
-    string model?;
-    OpenAI\.Reasoning reasoning?;
-    boolean? background?;
-    int? max_tool_calls?;
-    OpenAI\.ResponseTextParam text?;
-    OpenAI\.ToolsArray tools?;
-    OpenAI\.ToolChoiceOptions|OpenAI\.ToolChoiceParam tool_choice?;
-    OpenAI\.Prompt prompt?;
-    "auto"|"disabled"? truncation = "disabled";
-    OpenAI\.InputParam input?;
-    OpenAI\.IncludeEnum[]? include?;
-    boolean? parallel_tool_calls = true;
-    boolean? store = true;
-    string? instructions?;
-    boolean? 'stream?;
-    OpenAI\.ResponseStreamOptions stream_options?;
-    OpenAI\.ConversationParam conversation?;
-    OpenAI\.ContextManagementParam[]? context_management?;
-    int? max_output_tokens?;
-};
-
-public type OpenAI\.ToolChoiceParamType string|"allowed_tools"|"function"|"mcp"|"custom"|"apply_patch"|"shell"|"file_search"|"web_search_preview"|"computer_use_preview"|"web_search_preview_2025_03_11"|"image_generation"|"code_interpreter"|"computer"|"computer_use";
-
 # A collection of true/false filtering results for configured custom blocklists.
 public type AzureContentFilterBlocklistResult record {
     # A value indicating whether any of the detailed blocklists resulted in a filtering action.
     boolean filtered;
     # The pairs of individual blocklist IDs and whether they resulted in a filtering action.
-    AzureContentFilterBlocklistResult_details[] details?;
+    AzureContentFilterBlocklistResultDetails[] details?;
 };
 
-public type OpenAI\.Prompt record {
+public type InlineResponse2001 record {
+    "response.deleted" 'object;
     string id;
-    string? version?;
-    OpenAI\.ResponsePromptVariables variables?;
+    true deleted;
 };
 
-public type OpenAI\.ToolType string|"function"|"file_search"|"computer"|"computer_use_preview"|"web_search"|"mcp"|"code_interpreter"|"image_generation"|"local_shell"|"shell"|"custom"|"namespace"|"tool_search"|"web_search_preview"|"apply_patch";
+# An item representing part of the context for the response to be
+# generated by the model. Can contain text, images, and audio inputs,
+# as well as previous assistant responses and tool call outputs.
+public type OpenAIInputItem record {
+    OpenAIInputItemType 'type;
+};
 
-public type OpenAI\.ConversationParam\-2 record {
-    string id;
+# An error object returned when the model fails to generate a Response.
+public type OpenAIResponseError record {
+    # The error code for the response.
+    OpenAIResponseErrorCode code;
+    # A human-readable description of the error.
+    string message;
+};
+
+# If available, the citation details describing the associated license and its location.
+public type AzureContentFilterResultsForResponsesAPIProtectedMaterialCodeCitation record {
+    # The name or identifier of the license associated with the detection.
+    string license?;
+    # The URL associated with the license.
+    string URL?;
+};
+
+# Represents token usage details including input tokens, output tokens,
+# a breakdown of output tokens, and the total tokens used.
+public type OpenAIResponseUsage record {
+    # The number of input tokens.
+    int input_tokens;
+    # A detailed breakdown of the input tokens.
+    OpenAIResponseUsageInputTokensDetails input_tokens_details;
+    # The number of output tokens.
+    int output_tokens;
+    # A detailed breakdown of the output tokens.
+    OpenAIResponseUsageOutputTokensDetails output_tokens_details;
+    # The total number of tokens used.
+    int total_tokens;
+};
+
+# **gpt-5 and o-series models only**
+# Configuration options for
+# [reasoning models](https://platform.openai.com/docs/guides/reasoning).
+public type OpenAIReasoning record {
+    # Constrains effort on reasoning for
+    # [reasoning models](https://platform.openai.com/docs/guides/reasoning).
+    # Currently supported values are `none`, `minimal`, `low`, `medium`, `high`, and `xhigh`. Reducing
+    # reasoning effort can result in faster responses and fewer tokens used
+    # on reasoning in a response.
+    # - `gpt-5.1` defaults to `none`, which does not perform reasoning. The supported reasoning values for `gpt-5.1` are `none`, `low`, `medium`, and `high`. Tool calls are supported for all reasoning values in gpt-5.1.
+    # - All models before `gpt-5.1` default to `medium` reasoning effort, and do not support `none`.
+    # - The `gpt-5-pro` model defaults to (and only supports) `high` reasoning effort.
+    # - `xhigh` is supported for all models after `gpt-5.1-codex-max`.
+    OpenAIReasoningEffort? effort?;
+    "auto"|"concise"|"detailed"? summary?;
+    "auto"|"concise"|"detailed"? generate_summary?;
+};
+
+# How the model should select which tool (or tools) to use when generating
+# a response. See the `tools` parameter to see how to specify which tools
+# the model can call.
+public type OpenAIToolChoiceParam record {
+    OpenAIToolChoiceParamType 'type;
 };

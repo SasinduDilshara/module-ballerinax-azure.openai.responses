@@ -65,12 +65,12 @@ Now, you can utilize available connector operations.
 ```ballerina
 public function main() returns error? {
 
-    responses:OpenAI\.CreateResponse request = {
+    responses:OpenAICreateResponse request = {
         model: "gpt-4o-mini",
         input: "What is the Ballerina programming language?"
     };
 
-    responses:inline_response_200 response = check azureOpenAI->/responses.post(request);
+    responses:InlineResponse200 response = check azureOpenAI->/responses.post(request);
     io:println(response?.output_text);
 }
 ```

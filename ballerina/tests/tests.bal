@@ -115,6 +115,10 @@ isolated function testGetResponse() returns error? {
     InlineResponse200 response = check azureOpenAI->/responses/["resp-mock00001"].get(api\-version = apiVersion);
     test:assertEquals(response.id, "resp-mock00001");
     test:assertEquals(response.'object, "response");
+    // `error` and `incomplete_details` are required but nullable; on a successful
+    // (non-failed, complete) response they are null. This exercises the nullable fields.
+    test:assertTrue(response.'error is (), "Expected null error on a successful response");
+    test:assertTrue(response.incomplete_details is (), "Expected null incomplete_details");
 }
 
 @test:Config {

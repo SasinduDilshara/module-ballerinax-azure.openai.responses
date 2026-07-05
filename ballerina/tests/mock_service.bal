@@ -72,8 +72,8 @@ http:Service mockService = service object {
 };
 
 // Builds a minimal but schema-valid `InlineResponse200` payload. `error` and
-// `incomplete_details` are returned as `null`, which the relaxed data binding
-// treats as absent (they carry no value on a successful response).
+// `incomplete_details` are required but nullable, so a successful response
+// returns them as `null` (matching Azure's real behaviour).
 isolated function buildResponse(string id, string model, string status, string? outputText) returns json {
     return {
         "id": id,
@@ -88,10 +88,10 @@ isolated function buildResponse(string id, string model, string status, string? 
         "output_text": outputText,
         "instructions": null,
         "metadata": null,
-        // `error` and `incomplete_details` are required (non-nilable) in the
-        // generated `InlineResponse200` type, so they must always be present.
-        "error": {"code": "server_error", "message": ""},
-        "incomplete_details": {},
+        // `error` and `incomplete_details` are required but nullable; a successful
+        // response carries them as `null`.
+        "error": null,
+        "incomplete_details": null,
         "usage": {
             "input_tokens": 10,
             "input_tokens_details": {"cached_tokens": 0},

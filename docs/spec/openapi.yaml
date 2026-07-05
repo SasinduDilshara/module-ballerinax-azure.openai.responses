@@ -1389,10 +1389,12 @@ components:
           format: date-time
           nullable: true
         error:
-          $ref: '#/components/schemas/OpenAIResponseError'
+          allOf:
+          - $ref: '#/components/schemas/OpenAIResponseError'
           nullable: true
         incomplete_details:
-          $ref: '#/components/schemas/OpenAIResponseIncompleteDetails'
+          allOf:
+          - $ref: '#/components/schemas/OpenAIResponseIncompleteDetails'
           nullable: true
         output:
           type: array
@@ -3492,10 +3494,12 @@ components:
           format: date-time
           nullable: true
         error:
-          $ref: '#/components/schemas/OpenAIResponseError'
+          allOf:
+          - $ref: '#/components/schemas/OpenAIResponseError'
           nullable: true
         incomplete_details:
-          $ref: '#/components/schemas/OpenAIResponseIncompleteDetails'
+          allOf:
+          - $ref: '#/components/schemas/OpenAIResponseIncompleteDetails'
           nullable: true
         output:
           type: array

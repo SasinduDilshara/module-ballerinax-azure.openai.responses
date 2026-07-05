@@ -66,6 +66,28 @@ These changes are done in order to improve the overall usability, and as workaro
       - Extracted inline schemas into named components with UpperCamelCase names (`inline_response_200` → `InlineResponse200`, `inline_response_200_1` → `InlineResponse2001`, `AzureContentFilterResultsForResponsesAPI_protected_material_code` → `AzureContentFilterResultsForResponsesAPIProtectedMaterialCode`), updating every `$ref`. The `createResponse`, `getResponse`, and `cancelResponse` operations share the identical response shape, so they continue to reference a single `InlineResponse200` type.
    - **Reason**: Ballerina type names must be valid UpperCamelCase identifiers. Dots, hyphens, underscores, and lowercase starts force backslash-escaped or non-idiomatic type names, which hurts the connector's usability.
 
+9. **Made nullable `$ref` response properties actually nullable via `allOf`**:
+
+   - **Changed Schemas**: `InlineResponse200` (and the structurally identical `OpenAIResponse`) — the `error` and `incomplete_details` properties.
+   - **Original**: A `$ref` with a sibling `nullable: true`, e.g.
+
+     ```yaml
+     error:
+       $ref: '#/components/schemas/OpenAIResponseError'
+       nullable: true
+     ```
+
+   - **Updated**: Moved the `$ref` under an `allOf` so the sibling `nullable: true` is honored:
+
+     ```yaml
+     error:
+       allOf:
+       - $ref: '#/components/schemas/OpenAIResponseError'
+       nullable: true
+     ```
+
+   - **Reason**: In OpenAPI 3.0.0 a `$ref` overrides any sibling keywords, so the sibling `nullable: true` was ignored and `error`/`incomplete_details` were generated as non-nullable (`OpenAIResponseError`, `OpenAIResponseIncompleteDetails`). Azure returns `"error": null` on any non-failed response and `"incomplete_details": null` unless the response is incomplete, so these required fields must be nullable. Wrapping the `$ref` in `allOf` lets `nullable: true` apply, generating `OpenAIResponseError?` and `OpenAIResponseIncompleteDetails?`.
+
 ## OpenAPI cli command
 
 The following command was used to generate the Ballerina client from the OpenAPI specification. The command should be executed from the repository root directory.

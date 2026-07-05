@@ -63,6 +63,8 @@ token = "<your-azure-openai-api-key>"
 serviceUrl = "<your-azure-openai-endpoint-url>"
 ```
 
+Alternatively, to test the API key authentication path, provide `apiKey` instead of (or in addition to) `token`.
+
 ### Using Environment Variables
 
 Alternatively, you can set your authentication credentials as environment variables.
@@ -73,6 +75,8 @@ For Linux or macOS:
 export IS_LIVE_SERVER=true
 export AZURE_OPENAI_TOKEN="<your-azure-openai-api-key>"
 export AZURE_OPENAI_SERVICE_URL="<your-azure-openai-endpoint-url>"
+# Optional: to exercise the API key authentication path.
+export AZURE_OPENAI_API_KEY="<your-azure-openai-api-key>"
 ```
 
 For Windows:
@@ -81,6 +85,7 @@ For Windows:
 setx IS_LIVE_SERVER true
 setx AZURE_OPENAI_TOKEN <your-azure-openai-api-key>
 setx AZURE_OPENAI_SERVICE_URL <your-azure-openai-endpoint-url>
+setx AZURE_OPENAI_API_KEY <your-azure-openai-api-key>
 ```
 
 Then, run the following command to execute the tests:

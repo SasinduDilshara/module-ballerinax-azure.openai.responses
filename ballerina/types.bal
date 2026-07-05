@@ -20,228 +20,71 @@
 import ballerina/constraint;
 import ballerina/http;
 
-# Defines a function in your own code the model can choose to call. Learn more
-# about [function calling](/docs/guides/function-calling).
-public type FunctionTool record {
-    # The type of the function tool. Always `function`.
-    "function" 'type;
-    # The name of the function to call.
-    string name;
-    # A description of the function. Used by the model to determine whether
-    # or not to call the function.
-    string? description?;
-    # A JSON schema object describing the parameters of the function.
-    record {} parameters;
-    # Whether to enforce strict parameter validation. Default `true`.
-    boolean strict;
+public type OpenAI\.ContextManagementParam record {
+    string 'type;
+    int? compact_threshold?;
 };
 
-# An error object returned when the model fails to generate a Response.
-public type ResponseError record {
-    # The error code for the response.
-    ResponseErrorCode code;
-    # A human-readable description of the error.
-    string message;
-};
-
-# A citation for a web resource used to generate a model response.
-public type UrlCitation record {
-    # The URL of the web resource.
-    string url;
-    # The title of the web resource.
-    string title;
-    # The type of the URL citation. Always `url_citation`.
-    "url_citation" 'type;
-    # The index of the first character of the URL citation in the message.
-    int start_index;
-    # The index of the last character of the URL citation in the message.
-    int end_index;
-};
-
-# A text output from the model.
-public type OutputText record {
-    # The type of the output text. Always `output_text`.
-    "output_text" 'type;
-    # The text output from the model.
-    string text;
-    # The annotations of the text output.
-    Annotation[] annotations;
-};
-
-# A click action.
-public type Click record {
-    # Specifies the event type. For a click action, this property is 
-    # always set to `click`.
-    "click" 'type = "click";
-    # Indicates which mouse button was pressed during the click. One of `left`, `right`, `wheel`, `back`, or `forward`.
-    "left"|"right"|"wheel"|"back"|"forward" button;
-    # The x-coordinate where the click occurred.
-    int x;
-    # The y-coordinate where the click occurred.
-    int y;
-};
-
-public type OutputItem OutputMessage|FileSearchToolCall|FunctionToolCall|ComputerToolCall|ReasoningItem;
-
-# Content item used to generate a response.
-public type ItemResource InputMessageResource|OutputMessage|FileSearchToolCall|ComputerToolCall|ComputerToolCallOutputResource|FunctionToolCall|FunctionToolCallOutputResource;
-
-# A pending safety check for the computer call.
-public type ComputerToolCallSafetyCheck record {
-    # The ID of the pending safety check.
-    string id;
-    # The type of the pending safety check.
-    string code;
-    # Details about the pending safety check.
-    string message;
-};
-
-# Content item used to generate a response.
-public type Item InputMessage|OutputMessage|FileSearchToolCall|ComputerToolCall|ComputerToolCallOutput|FunctionToolCall|FunctionToolCallOutput|ReasoningItem;
-
-# A filter used to compare a specified attribute key to a given value using a defined comparison operation.
-public type ComparisonFilter record {|
-    # Specifies the comparison operator: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`.
-    # - `eq`: equals
-    # - `ne`: not equal
-    # - `gt`: greater than
-    # - `gte`: greater than or equal
-    # - `lt`: less than
-    # - `lte`: less than or equal
-    "eq"|"ne"|"gt"|"gte"|"lt"|"lte" 'type = "eq";
-    # The key to compare against the value.
-    string 'key;
-    # The value to compare against the attribute key; supports string, number, or boolean types.
-    string|decimal|boolean value;
-|};
-
-# A tool that controls a virtual computer. Learn more about the 
-# [computer tool](/docs/guides/tools-computer-use).
-public type ComputerTool record {
-    # The type of the computer use tool. Always `computer_use_preview`.
-    "computer-preview" 'type;
-    # The width of the computer display.
-    decimal display_width;
-    # The height of the computer display.
-    decimal display_height;
-    # The type of computer environment to control.
-    "mac"|"windows"|"ubuntu"|"browser" environment;
-};
-
-# Represents the Queries record for the operation: getResponsesResponseId
-public type GetResponsesResponseIdQueries record {
-    # Additional fields to include in the response. See the `include`
-    # parameter for Response creation above for more information.
-    includable[] include?;
-};
-
-# A tool that searches for relevant content from uploaded files.
-# Learn more about the [file search tool](/docs/guides/tools-file-search).
-public type FileSearchTool record {
-    # The type of the file search tool. Always `file_search`.
-    "file_search" 'type;
-    # The IDs of the vector stores to search.
-    string[] vector_store_ids;
-    # The maximum number of results to return. This number should be between 1 
-    # and 50 inclusive.
-    int max_num_results?;
-    # A filter to apply based on file attributes.
-    ComparisonFilter|CompoundFilter filters?;
-    # Ranking options for search.
-    FileSearchTool_ranking_options ranking_options?;
-};
-
-public type ResponseProperties record {
-    # The unique ID of the previous response to the model. Use this to
-    # create multi-turn conversations. Learn more about 
-    # [conversation state](/docs/guides/conversation-state).
-    string? previous_response_id?;
-    # **o-series models only**
-    # 
-    # Configuration options for 
-    # [reasoning models](https://platform.openai.com/docs/guides/reasoning).
-    Reasoning reasoning?;
-    # An upper bound for the number of tokens that can be generated for a response, including visible output tokens and [reasoning tokens](/docs/guides/reasoning).
-    int? max_output_tokens?;
-    # Inserts a system (or developer) message as the first item in the model's context.
-    # 
-    # When using along with `previous_response_id`, the instructions from a previous
-    # response will be not be carried over to the next response. This makes it simple
-    # to swap out system (or developer) messages in new responses.
-    string? instructions?;
-    # Configuration options for a text response from the model. Can be plain
-    # text or structured JSON data. Learn more:
-    # - [Text inputs and outputs](/docs/guides/text)
-    # - [Structured Outputs](/docs/guides/structured-outputs)
-    ResponseProperties_text text?;
-    # An array of tools the model may call while generating a response. You 
-    # can specify which tool to use by setting the `tool_choice` parameter.
-    # 
-    # The two categories of tools you can provide the model are:
-    # 
-    # - **Built-in tools**: Tools that are provided by OpenAI that extend the
-    #   model's capabilities, like [web search](/docs/guides/tools-web-search)
-    #   or [file search](/docs/guides/tools-file-search). Learn more about
-    #   [built-in tools](/docs/guides/tools).
-    # - **Function calls (custom tools)**: Functions that are defined by you,
-    #   enabling the model to call your own code. Learn more about
-    #   [function calling](/docs/guides/function-calling).
-    Tool[] tools?;
-    # How the model should select which tool (or tools) to use when generating
-    # a response. See the `tools` parameter to see how to specify which tools
-    # the model can call.
-    ToolChoiceOptions|ToolChoiceTypes|ToolChoiceFunction tool_choice?;
-    # The truncation strategy to use for the model response.
-    # - `auto`: If the context of this response and previous ones exceeds
-    #   the model's context window size, the model will truncate the 
-    #   response to fit the context window by dropping input items in the
-    #   middle of the conversation. 
-    # - `disabled` (default): If a model response will exceed the context window 
-    #   size for a model, the request will fail with a 400 error.
-    "auto"|"disabled"? truncation = "disabled";
-};
-
-public type ComputerToolCallOutputResource record {
-    *ComputerToolCallOutput;
-    # The unique ID of the computer call tool output.
+public type OpenAI\.ConversationReference record {
     string id;
 };
 
-# A message input to the model with a role indicating instruction following
-# hierarchy. Instructions given with the `developer` or `system` role take
-# precedence over instructions given with the `user` role. Messages with the
-# `assistant` role are presumed to have been generated by the model in previous
-# interactions.
-public type EasyInputMessage record {
-    # The role of the message input. One of `user`, `assistant`, `system`, or
-    # `developer`.
-    "user"|"assistant"|"system"|"developer" role;
-    # Text, image, or audio input to the model, used to generate a response.
-    # Can also contain previous assistant responses.
-    string|InputMessageContentList content;
-    # The type of the message input. Always `message`.
-    "message" 'type?;
+public type OpenAI\.OutputItemType string|"output_message"|"file_search_call"|"function_call"|"function_call_output"|"web_search_call"|"computer_call"|"computer_call_output"|"reasoning"|"tool_search_call"|"tool_search_output"|"compaction"|"image_generation_call"|"code_interpreter_call"|"local_shell_call"|"local_shell_call_output"|"shell_call"|"shell_call_output"|"apply_patch_call"|"apply_patch_call_output"|"mcp_call"|"mcp_list_tools"|"mcp_approval_request"|"mcp_approval_response"|"custom_tool_call"|"custom_tool_call_output"|"tool_approval_request";
+
+public type OpenAI\.InputParam string|OpenAI\.InputItem[];
+
+public type OpenAI\.ToolChoiceOptions "none"|"auto"|"required";
+
+public type OpenAI\.ResponseUsage record {
+    int input_tokens;
+    OpenAI\.ResponseUsageInputTokensDetails input_tokens_details;
+    int output_tokens;
+    OpenAI\.ResponseUsageOutputTokensDetails output_tokens_details;
+    int total_tokens;
 };
 
-# A citation to a file.
-public type FileCitation record {
-    # The type of the file citation. Always `file_citation`.
-    "file_citation" 'type;
-    # The index of the file in the list of files.
-    int index;
-    # The ID of the file.
-    string file_id;
+public type OpenAI\.ItemResource record {
+    OpenAI\.ItemResourceType 'type;
 };
 
-# Controls which (if any) tool is called by the model.
-# 
-# `none` means the model will not call any tool and instead generates a message.
-# 
-# `auto` means the model can pick between generating a message or calling one or
-# more tools.
-# 
-# `required` means the model must call one or more tools.
-public type ToolChoiceOptions "none"|"auto"|"required";
+public type OpenAI\.ResponseUsageOutputTokensDetails record {
+    int reasoning_tokens;
+};
+
+public type AzureAIFoundryModelsApiVersion "v1"|"preview";
+
+# If available, the citation details describing the associated license and its location.
+public type AzureContentFilterResultsForResponsesAPI_protected_material_code_citation record {
+    # The name or identifier of the license associated with the detection.
+    string license?;
+    # The URL associated with the license.
+    string URL?;
+};
+
+public type OpenAI\.ToolsArray OpenAI\.Tool[];
+
+public type AzureContentFilterResultOffsets record {
+    int:Signed32 start_offset;
+    int:Signed32 end_offset;
+    int:Signed32 check_offset;
+};
+
+# Represents the Queries record for the operation: cancelResponse
+public type CancelResponseQueries record {
+    # The explicit Azure AI Foundry Models API version to use for this request.
+    # `v1` if not otherwise specified.
+    AzureAIFoundryModelsApiVersion api\-version?;
+};
+
+public type OpenAI\.IncludeEnum string|"file_search_call.results"|"web_search_call.results"|"web_search_call.action.sources"|"message.input_image.image_url"|"computer_call_output.output.image_url"|"code_interpreter_call.outputs"|"reasoning.encrypted_content"|"message.output_text.logprobs";
+
+public type OpenAI\.ResponseIncompleteDetails record {
+    "max_output_tokens"|"content_filter" reason?;
+};
+
+public type OpenAI\.OutputItem record {
+    OpenAI\.OutputItemType 'type;
+};
 
 # Provides a set of configurations for controlling the behaviours when communicating with a remote HTTP endpoint.
 @display {label: "Connection Config"}
@@ -287,715 +130,417 @@ public type ConnectionConfig record {|
     boolean laxDataBinding = true;
 |};
 
-public type Tool FileSearchTool|FunctionTool|ComputerTool;
-
-public type ReasoningItem_content record {
-    # The type of the object. Always `text`.
-    "reasoning_summary" 'type;
-    # A short summary of the reasoning used by the model when generating
-    # the response.
-    string text;
+public type AzureContentFilterCompletionTextSpanDetectionResult record {
+    # Whether the content detection resulted in a content filtering action.
+    boolean filtered;
+    # Whether the labeled content category was detected in the content.
+    boolean detected;
+    # Detailed information about the detected completion text spans.
+    AzureContentFilterCompletionTextSpan[] details;
 };
 
-# A collection of keypresses the model would like to perform.
-public type KeyPress record {
-    # Specifies the event type. For a keypress action, this property is 
-    # always set to `keypress`.
-    "keypress" 'type = "keypress";
-    # The combination of keys the model is requesting to be pressed. This is an
-    # array of strings, each representing a key.
-    string[] keys;
+# Represents the Queries record for the operation: createResponse
+public type CreateResponseQueries record {
+    # The explicit Azure AI Foundry Models API version to use for this request.
+    # `v1` if not otherwise specified.
+    AzureAIFoundryModelsApiVersion api\-version?;
 };
 
-public type InputContent InputText|InputImage|InputFile;
-
-# A description of the chain of thought used by a reasoning model while generating
-# a response.
-public type ReasoningItem record {
-    # The type of the object. Always `reasoning`.
-    "reasoning" 'type;
-    # The unique identifier of the reasoning content.
+public type AzureContentFilterCustomTopicResult_details record {
+    # A value indicating whether the topic is detected.
+    boolean detected;
+    # The ID of the custom topic evaluated.
     string id;
-    # Reasoning text contents.
-    ReasoningItem_content[] content;
-    # The status of the item. One of `in_progress`, `completed`, or
-    # `incomplete`. Populated when items are returned via API.
-    "in_progress"|"completed"|"incomplete" status?;
 };
 
-# Represents the Queries record for the operation: getResponsesResponseIdInputItems
-public type GetResponsesResponseIdInputItemsQueries record {
-    # An item ID to list items before, used in pagination.
-    string before?;
-    # A limit on the number of objects to be returned. Limit can range between
-    # 1 and 100, and the default is 20.
-    int 'limit = 20;
-    # An item ID to list items after, used in pagination.
-    string after?;
-    # The order to return the input items in. Default is `asc`.
-    # - `asc`: Return the input items in ascending order.
-    # - `desc`: Return the input items in descending order.
-    "asc"|"desc" 'order?;
+public type OpenAI\.ResponseTextParam record {
+    OpenAI\.TextResponseFormatConfiguration format?;
+    OpenAI\.Verbosity? verbosity?;
 };
 
-# The schema for the response format, described as a JSON Schema object.
-public type ResponseFormatJsonSchemaSchema record {
+public type OpenAI\.TextResponseFormatConfigurationType string|"text"|"json_schema"|"json_object";
+
+# A labeled content filter result item that indicates whether the content was detected and whether the content was
+# filtered.
+public type AzureContentFilterDetectionResult record {
+    # Whether the content detection resulted in a content filtering action.
+    boolean filtered;
+    # Whether the labeled content category was detected in the content.
+    boolean detected;
 };
 
-# Specify additional output data to include in the model response. Currently
-# supported values are:
-# - `file_search_call.results`: Include the search results of
-#   the file search tool call.
-# - `message.input_image.image_url`: Include image urls from the input message.
-# - `computer_call_output.output.image_url`: Include image urls from the computer call output.
-public type includable "file_search_call.results"|"message.input_image.image_url"|"computer_call_output.output.image_url";
-
-# A scroll action.
-public type Scroll record {
-    # Specifies the event type. For a scroll action, this property is 
-    # always set to `scroll`.
-    "scroll" 'type = "scroll";
-    # The x-coordinate where the scroll occurred.
-    int x;
-    # The y-coordinate where the scroll occurred.
-    int y;
-    # The horizontal scroll distance.
-    int scroll_x;
-    # The vertical scroll distance.
-    int scroll_y;
+public type OpenAI\.ResponseUsageInputTokensDetails record {
+    int cached_tokens;
 };
 
-# An x/y coordinate pair, e.g. `{ x: 100, y: 200 }`.
-public type Coordinate record {
-    # The x-coordinate.
-    int x;
-    # The y-coordinate.
-    int y;
+public type inline_response_200_1 record {
+    "response.deleted" 'object;
+    string id;
+    true deleted;
 };
 
-public type CreateModelResponseProperties ModelResponseProperties;
+public type AzureContentFilterBlocklistResult_details record {
+    # A value indicating whether the blocklist produced a filtering action.
+    boolean filtered;
+    # The ID of the custom blocklist evaluated.
+    string id;
+};
 
-public type OutputContent OutputText|Refusal;
-
-# A wait action.
-public type Wait record {
-    # Specifies the event type. For a wait action, this property is 
-    # always set to `wait`.
-    "wait" 'type = "wait";
+public type OpenAI\.ResponseError record {
+    OpenAI\.ResponseErrorCode code;
+    string message;
 };
 
 # Provides API key configurations needed when communicating with a remote HTTP endpoint.
 public type ApiKeysConfig record {|
     string api\-key;
+    string authorization;
 |};
 
-public type ComputerAction Click|DoubleClick|Drag|KeyPress|Move|Screenshot|Scroll|Type|Wait;
-
-# A list of one or many input items to the model, containing different content 
-# types.
-public type InputMessageContentList InputContent[];
-
-# Represents token usage details including input tokens, output tokens,
-# a breakdown of output tokens, and the total tokens used.
-public type ResponseUsage record {
-    # The number of input tokens.
-    int input_tokens;
-    # The number of output tokens.
-    int output_tokens;
-    # A detailed breakdown of the output tokens.
-    ResponseUsage_output_tokens_details output_tokens_details;
-    # The total number of tokens used.
-    int total_tokens;
+public type OpenAI\.TextResponseFormatConfiguration record {
+    OpenAI\.TextResponseFormatConfigurationType 'type;
 };
 
-# Set of 16 key-value pairs that can be attached to an object. This can be 
-# useful for storing additional information about the object in a structured 
-# format, and querying for objects via API or the dashboard. Keys are strings 
-# with a maximum length of 64 characters. Values are strings with a maximum 
-# length of 512 characters, booleans, or numbers.
-public type VectorStoreFileAttributes record {
+public type OpenAI\.ResponseStreamOptions record {
+    boolean include_obfuscation?;
 };
 
-# A detailed breakdown of the output tokens.
-public type ResponseUsage_output_tokens_details record {
-    # The number of reasoning tokens.
-    int reasoning_tokens;
+# Represents the Queries record for the operation: deleteResponse
+public type DeleteResponseQueries record {
+    # The explicit Azure AI Foundry Models API version to use for this request.
+    # `v1` if not otherwise specified.
+    AzureAIFoundryModelsApiVersion api\-version?;
 };
 
-# The output of a function tool call.
-public type FunctionToolCallOutput record {
-    # The unique ID of the function tool call output. Populated when this item
-    # is returned via API.
-    string id?;
-    # The type of the function tool call output. Always `function_call_output`.
-    "function_call_output" 'type;
-    # The unique ID of the function tool call generated by the model.
-    string call_id;
-    # A JSON string of the output of the function tool call.
-    string output;
-    # The status of the item. One of `in_progress`, `completed`, or
-    # `incomplete`. Populated when items are returned via API.
-    "in_progress"|"completed"|"incomplete" status?;
+# A collection of true/false filtering results for configured custom topics.
+public type AzureContentFilterCustomTopicResult record {
+    # A value indicating whether any of the detailed topics resulted in a filtering action.
+    boolean filtered;
+    # The pairs of individual topic IDs and whether they are detected.
+    AzureContentFilterCustomTopicResult_details[] details?;
 };
 
-# A text input to the model.
-public type InputText record {
-    # The type of the input item. Always `input_text`.
-    "input_text" 'type;
-    # The text input to the model.
-    string text;
+public type AzureContentFilterForResponsesAPI record {
+    # Indicate if the response is blocked.
+    boolean blocked;
+    # The name of the source type of the message.
+    string source_type;
+    # A content filter result for a single response item produced by a generative AI system.
+    AzureContentFilterResultsForResponsesAPI content_filter_results;
+    AzureContentFilterResultOffsets content_filter_offsets;
+    # The ID of the tool call associated with this content filter result, if applicable.
+    string tool_call_id?;
 };
 
-# Set of 16 key-value pairs that can be attached to an object. This can be
-# useful for storing additional information about the object in a structured
-# format, and querying for objects via API or the dashboard. 
-# 
-# Keys are strings with a maximum length of 64 characters. Values are strings
-# with a maximum length of 512 characters.
-public type Metadata record {|
-    string...;
-|};
-
-# The results of a file search tool call. See the 
-# [file search guide](/docs/guides/tools-file-search) for more information.
-public type FileSearchToolCall record {
-    # The unique ID of the file search tool call.
-    string id;
-    # The type of the file search tool call. Always `file_search_call`.
-    "file_search_call" 'type;
-    # The status of the file search tool call. One of `in_progress`, 
-    # `searching`, `incomplete` or `failed`,
-    "in_progress"|"searching"|"completed"|"incomplete"|"failed" status;
-    # The queries used to search for files.
-    string[] queries;
-    # The results of the file search tool call.
-    FileSearchToolCall_results[]? results?;
+# Represents the Queries record for the operation: listInputItems
+public type ListInputItemsQueries record {
+    # The explicit Azure AI Foundry Models API version to use for this request.
+    # `v1` if not otherwise specified.
+    AzureAIFoundryModelsApiVersion api\-version?;
+    # A cursor for use in pagination. `before` is an object ID that defines your place in the list.
+    # For instance, if you make a list request and receive 100 objects, ending with obj_foo, your
+    # subsequent call can include before=obj_foo in order to fetch the previous page of the list.
+    string before?;
+    # A limit on the number of objects to be returned. Limit can range between 1 and 100, and the
+    # default is 20.
+    int:Signed32 'limit = 20;
+    # A cursor for use in pagination. `after` is an object ID that defines your place in the list.
+    # For instance, if you make a list request and receive 100 objects, ending with obj_foo, your
+    # subsequent call can include after=obj_foo in order to fetch the next page of the list.
+    string after?;
+    # Sort order by the `created_at` timestamp of the objects. `asc` for ascending order and`desc`
+    # for descending order.
+    "asc"|"desc" 'order?;
 };
 
-# The error code for the response.
-public type ResponseErrorCode "server_error"|"rate_limit_exceeded"|"invalid_prompt"|"vector_store_timeout"|"invalid_image"|"invalid_image_format"|"invalid_base64_image"|"invalid_image_url"|"image_too_large"|"image_too_small"|"image_parse_error"|"image_content_policy_violation"|"invalid_image_mode"|"image_file_too_large"|"unsupported_image_media_type"|"empty_image_file"|"failed_to_download_image"|"image_file_not_found";
-
-# A tool call to run a function. See the 
-# [function calling guide](/docs/guides/function-calling) for more information.
-public type FunctionToolCall record {
-    # The unique ID of the function tool call.
-    string id;
-    # The type of the function tool call. Always `function_call`.
-    "function_call" 'type;
-    # The unique ID of the function tool call generated by the model.
-    string call_id;
-    # The name of the function to run.
-    string name;
-    # A JSON string of the arguments to pass to the function.
-    string arguments;
-    # The status of the item. One of `in_progress`, `completed`, or
-    # `incomplete`. Populated when items are returned via API.
-    "in_progress"|"completed"|"incomplete" status?;
+public type OpenAI\.ResponsePromptVariables record {
 };
 
-# A refusal from the model.
-public type Refusal record {
-    # The type of the refusal. Always `refusal`.
-    "refusal" 'type;
-    # The refusal explanationfrom the model.
-    string refusal;
+# Represents the Queries record for the operation: getResponse
+public type GetResponseQueries record {
+    # The explicit Azure AI Foundry Models API version to use for this request.
+    # `v1` if not otherwise specified.
+    AzureAIFoundryModelsApiVersion api\-version?;
+    # If set to true, the model response data will be streamed to the client as it is generated using server-sent events.
+    boolean 'stream?;
+    # The sequence number of the event after which to start streaming.
+    int:Signed32 starting_after?;
+    # Additional fields to include in the response. See the include parameter for Response creation above for more information.
+    OpenAI\.IncludeEnum[] include\[\] = [];
+    # When true, stream obfuscation will be enabled. Stream obfuscation adds random characters to an `obfuscation` field on streaming delta events to normalize payload sizes as a mitigation to certain side-channel attacks. These obfuscation fields are included by default, but add a small amount of overhead to the data stream. You can set `include_obfuscation` to false to optimize for bandwidth if you trust the network links between your application and the OpenAI API.
+    boolean include_obfuscation = true;
 };
 
-# The output of a computer tool call.
-public type ComputerToolCallOutput record {
-    # The type of the computer tool call output. Always `computer_call_output`.
-    "computer_call_output" 'type = "computer_call_output";
-    # The ID of the computer tool call output.
-    string id?;
-    # The ID of the computer tool call that produced the output.
-    string call_id;
-    # The safety checks reported by the API that have been acknowledged by the 
-    # developer.
-    ComputerToolCallSafetyCheck[] acknowledged_safety_checks?;
-    # A computer screenshot image used with the computer use tool.
-    ComputerScreenshotImage output;
-    # The status of the message input. One of `in_progress`, `completed`, or
-    # `incomplete`. Populated when input items are returned via API.
-    "in_progress"|"completed"|"incomplete" status?;
+public type OpenAI\.ResponseErrorCode "server_error"|"rate_limit_exceeded"|"invalid_prompt"|"vector_store_timeout"|"invalid_image"|"invalid_image_format"|"invalid_base64_image"|"invalid_image_url"|"image_too_large"|"image_too_small"|"image_parse_error"|"image_content_policy_violation"|"invalid_image_mode"|"image_file_too_large"|"unsupported_image_media_type"|"empty_image_file"|"failed_to_download_image"|"image_file_not_found";
+
+# A detection result that describes a match against licensed code or other protected source material.
+public type AzureContentFilterResultsForResponsesAPI_protected_material_code record {
+    # Whether the content detection resulted in a content filtering action.
+    boolean filtered;
+    # Whether the labeled content category was detected in the content.
+    boolean detected;
+    # If available, the citation details describing the associated license and its location.
+    AzureContentFilterResultsForResponsesAPI_protected_material_code_citation citation?;
 };
 
-# A mouse move action.
-public type Move record {
-    # Specifies the event type. For a move action, this property is 
-    # always set to `move`.
-    "move" 'type = "move";
-    # The x-coordinate to move to.
-    int x;
-    # The y-coordinate to move to.
-    int y;
+public type OpenAI\.Verbosity "low"|"medium"|"high"?;
+
+# If present, details about an error that prevented content filtering from completing its evaluation.
+public type AzureContentFilterResultsForResponsesAPI_error record {
+    # A distinct, machine-readable code associated with the error.
+    int:Signed32 code;
+    # A human-readable message associated with the error.
+    string message;
 };
 
-# Configuration options for a text response from the model. Can be plain
-# text or structured JSON data. Learn more:
-# - [Text inputs and outputs](/docs/guides/text)
-# - [Structured Outputs](/docs/guides/structured-outputs)
-public type ResponseProperties_text record {
-    # An object specifying the format that the model must output.
+# A representation of a span of completion text as used by Azure OpenAI content filter results.
+public type AzureContentFilterCompletionTextSpan record {
+    # Offset of the UTF32 code point which begins the span.
+    int:Signed32 completion_start_offset;
+    # Offset of the first UTF32 code point which is excluded from the span. This field is always equal to completion_start_offset for empty spans. This field is always larger than completion_start_offset for non-empty spans.
+    int:Signed32 completion_end_offset;
+};
+
+public type inline_response_200 record {
+    # Set of 16 key-value pairs that can be attached to an object. This can be
+    # useful for storing additional information about the object in a structured
+    # format, and querying for objects via API or the dashboard.
+    # Keys are strings with a maximum length of 64 characters. Values are strings
+    # with a maximum length of 512 characters.
+    OpenAI\.Metadata metadata?;
+    int? top_logprobs?;
+    decimal? temperature = 1;
+    decimal? top_p = 1;
+    # This field is being replaced by `safety_identifier` and `prompt_cache_key`. Use `prompt_cache_key` instead to maintain caching optimizations.
+    #   A stable identifier for your end-users.
+    #   Used to boost cache hit rates by better bucketing similar requests and  to help OpenAI detect and prevent abuse. [Learn more](/docs/guides/safety-best-practices#safety-identifiers).
     # 
-    # Configuring `{ "type": "json_schema" }` enables Structured Outputs, 
-    # which ensures the model will match your supplied JSON schema. Learn more in the 
-    # [Structured Outputs guide](/docs/guides/structured-outputs).
-    # 
-    # The default format is `{ "type": "text" }` with no additional options.
-    # 
-    # **Not recommended for gpt-4o and newer models:**
-    # 
-    # Setting to `{ "type": "json_object" }` enables the older JSON mode, which
-    # ensures the message the model generates is valid JSON. Using `json_schema`
-    # is preferred for models that support it.
-    TextResponseFormatConfiguration format?;
-};
-
-# Indicates that the model should use a built-in tool to generate a response.
-# [Learn more about built-in tools](/docs/guides/tools).
-public type ToolChoiceTypes record {
-    # The type of hosted tool the model should to use. Learn more about
-    # [built-in tools](/docs/guides/tools).
-    # 
-    # Allowed values are:
-    # - `file_search`
-    # - `computer_use_preview`
-    "file_search"|"computer_use_preview" 'type;
-};
-
-# A path to a file.
-public type FilePath record {
-    # The type of the file path. Always `file_path`.
-    "file_path" 'type;
-    # The ID of the file.
-    string file_id;
-    # The index of the file in the list of files.
-    int index;
-};
-
-public type ResponseFormatText record {
-    # The type of response format being defined: `text`
-    "text" 'type;
-};
-
-public type FileSearchToolCall_results record {
-    # The unique ID of the file.
-    string file_id?;
-    # The text that was retrieved from the file.
-    string text?;
-    # The name of the file.
-    string filename?;
-    # Set of 16 key-value pairs that can be attached to an object. This can be 
-    # useful for storing additional information about the object in a structured 
-    # format, and querying for objects via API or the dashboard. Keys are strings 
-    # with a maximum length of 64 characters. Values are strings with a maximum 
-    # length of 512 characters, booleans, or numbers.
-    VectorStoreFileAttributes? attributes?;
-    # The relevance score of the file - a value between 0 and 1.
-    float score?;
-};
-
-# An object specifying the format that the model must output.
-# 
-# Configuring `{ "type": "json_schema" }` enables Structured Outputs, 
-# which ensures the model will match your supplied JSON schema. Learn more in the 
-# [Structured Outputs guide](/docs/guides/structured-outputs).
-# 
-# The default format is `{ "type": "text" }` with no additional options.
-# 
-# **Not recommended for gpt-4o and newer models:**
-# 
-# Setting to `{ "type": "json_object" }` enables the older JSON mode, which
-# ensures the message the model generates is valid JSON. Using `json_schema`
-# is preferred for models that support it.
-public type TextResponseFormatConfiguration ResponseFormatText|TextResponseFormatJsonSchema|ResponseFormatJsonObject;
-
-public type InputMessageResource record {
-    *InputMessage;
-    # The unique ID of the message input.
-    string id;
-};
-
-# Combine multiple filters using `and` or `or`.
-public type CompoundFilter record {|
-    # Type of operation: `and` or `or`.
-    "and"|"or" 'type;
-    # Array of filters to combine. Items can be `ComparisonFilter` or `CompoundFilter`.
-    (ComparisonFilter|CompoundFilter)[] filters;
-|};
-
-public type createResponse record {
-    *CreateModelResponseProperties;
-    *ResponseProperties;
-    # Text, image, or file inputs to the model, used to generate a response.
-    # 
-    # Learn more:
-    # - [Text inputs and outputs](/docs/guides/text)
-    # - [Image inputs](/docs/guides/images)
-    # - [File inputs](/docs/guides/pdf-files)
-    # - [Conversation state](/docs/guides/conversation-state)
-    # - [Function calling](/docs/guides/function-calling)
-    string|InputItem[] input;
-    # Specify additional output data to include in the model response. Currently
-    # supported values are:
-    # - `file_search_call.results`: Include the search results of
-    #   the file search tool call.
-    # - `message.input_image.image_url`: Include image urls from the input message.
-    # - `computer_call_output.output.image_url`: Include image urls from the computer call output.
-    includable[]? include?;
-    # Whether to allow the model to run tool calls in parallel.
-    boolean? parallel_tool_calls = true;
-    # Whether to store the generated model response for later retrieval via
-    # API.
-    boolean? store = true;
-    # If set to true, the model response data will be streamed to the client
-    # as it is generated using [server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#Event_stream_format).
-    # See the [Streaming section below](/docs/api-reference/responses-streaming)
-    # for more information.
-    boolean? 'stream = false;
-    # Model used to generate the responses.
-    string model;
-};
-
-# Details about why the response is incomplete.
-public type response_incomplete_details record {
-    # The reason why the response is incomplete.
-    "max_output_tokens"|"content_filter" reason?;
-};
-
-# JSON Schema response format. Used to generate structured JSON responses.
-# Learn more about [Structured Outputs](/docs/guides/structured-outputs).
-public type TextResponseFormatJsonSchema record {
-    # The type of response format being defined. Always `json_schema`.
-    "json_schema" 'type;
-    # A description of what the response format is for, used by the model to
-    # determine how to respond in the format.
-    string description?;
-    # The name of the response format. Must be a-z, A-Z, 0-9, or contain
-    # underscores and dashes, with a maximum length of 64.
-    string name?;
-    # The schema for the response format, described as a JSON Schema object.
-    ResponseFormatJsonSchemaSchema schema;
-    # Whether to enable strict schema adherence when generating the output.
-    # If set to true, the model will always follow the exact schema defined
-    # in the `schema` field. Only a subset of JSON Schema is supported when
-    # `strict` is `true`. To learn more, read the [Structured Outputs
-    # guide](/docs/guides/structured-outputs).
-    boolean? strict = false;
-};
-
-# An image input to the model. Learn about [image inputs](/docs/guides/vision).
-public type InputImage record {
-    # The type of the input item. Always `input_image`.
-    "input_image" 'type;
-    # The URL of the image to be sent to the model. A fully qualified URL or
-    # base64 encoded image in a data URL.
-    string? image_url?;
-    # The ID of the file to be sent to the model.
-    string? file_id?;
-    # The detail level of the image to be sent to the model. One of `high`,
-    # `low`, or `auto`. Defaults to `auto`.
-    "high"|"low"|"auto" detail = "auto";
-};
-
-public type Annotation FileCitation|UrlCitation|FilePath;
-
-public type ResponseFormatJsonObject record {
-    # The type of response format being defined: `json_object`
-    "json_object" 'type;
-};
-
-# A file input to the model.
-public type InputFile record {
-    # The type of the input item. Always `input_file`.
-    "input_file" 'type;
-    # The ID of the file to be sent to the model.
-    string file_id?;
-    # The name of the file to be sent to the model.
-    string filename?;
-    # The content of the file to be sent to the model.
-    string file_data?;
-};
-
-# An internal identifier for an item to reference.
-public type ItemReference record {
-    # The ID of the item to reference.
-    string id;
-    # The type of item to reference. Always `item_reference`.
-    "item_reference" 'type;
-};
-
-# Use this option to force the model to call a specific function.
-public type ToolChoiceFunction record {
-    # For function calling, the type is always `function`.
-    "function" 'type;
-    # The name of the function to call.
-    string name;
-};
-
-# Ranking options for search.
-public type FileSearchTool_ranking_options record {|
-    # The ranker to use for the file search.
-    "auto"|"default-2024-11-15" ranker = "auto";
-    # The score threshold for the file search, a number between 0 and 1.
-    # Numbers closer to 1 will attempt to return only the most relevant
-    # results, but may return fewer results.
-    @constraint:Number {minValue: 0, maxValue: 1}
-    decimal score_threshold = 0;
-|};
-
-# An output message from the model.
-public type OutputMessage record {
-    # The unique ID of the output message.
-    string id;
-    # The type of the output message. Always `message`.
-    "message" 'type;
-    # The role of the output message. Always `assistant`.
-    "assistant" role;
-    # The content of the output message.
-    OutputContent[] content;
-    # The status of the message input. One of `in_progress`, `completed`, or
-    # `incomplete`. Populated when input items are returned via API.
-    "in_progress"|"completed"|"incomplete" status;
-};
-
-# An action to type in text.
-public type Type record {
-    # Specifies the event type. For a type action, this property is 
-    # always set to `type`.
-    "type" 'type = "type";
-    # The text to type.
-    string text;
-};
-
-# A drag action.
-public type Drag record {
-    # Specifies the event type. For a drag action, this property is 
-    # always set to `drag`.
-    "drag" 'type = "drag";
-    # An array of coordinates representing the path of the drag action. Coordinates will appear as an array
-    # of objects, eg
-    # ```
-    # [
-    #   { x: 100, y: 200 },
-    #   { x: 200, y: 300 }
-    # ]
-    # ```
-    Coordinate[] path;
-};
-
-# A computer screenshot image used with the computer use tool.
-public type ComputerScreenshotImage record {
-    # Specifies the event type. For a computer screenshot, this property is 
-    # always set to `computer_screenshot`.
-    "computer_screenshot" 'type = "computer_screenshot";
-    # The URL of the screenshot image.
-    string image_url?;
-    # The identifier of an uploaded file that contains the screenshot.
-    string file_id?;
-};
-
-# **o-series models only**
-# 
-# Configuration options for 
-# [reasoning models](https://platform.openai.com/docs/guides/reasoning).
-public type Reasoning record {
-    # **o-series models only** 
-    # 
-    # Constrains effort on reasoning for 
+    # # Deprecated
+    @deprecated
+    string user?;
+    # A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies.
+    #   The IDs should be a string that uniquely identifies each user, with a maximum length of 64 characters. We recommend hashing their username or email address, in order to avoid sending us any identifying information. [Learn more](/docs/guides/safety-best-practices#safety-identifiers).
+    @constraint:String {maxLength: 64}
+    string safety_identifier?;
+    # Used by OpenAI to cache responses for similar requests to optimize your cache hit rates. Replaces the `user` field. [Learn more](/docs/guides/prompt-caching).
+    string prompt_cache_key?;
+    "in_memory"|"24h"? prompt_cache_retention?;
+    string? previous_response_id?;
+    # Model ID used to generate the response, like `gpt-4o` or `o3`. OpenAI
+    #   offers a wide range of models with different capabilities, performance
+    #   characteristics, and price points. Refer to the [model guide](/docs/models)
+    #   to browse and compare available models.
+    string model?;
+    # **gpt-5 and o-series models only**
+    # Configuration options for
     # [reasoning models](https://platform.openai.com/docs/guides/reasoning).
-    # Currently supported values are `low`, `medium`, and `high`. Reducing
-    # reasoning effort can result in faster responses and fewer tokens used
-    # on reasoning in a response.
-    ReasoningEffort? effort;
-    # **o-series models only** 
-    # 
-    # A summary of the reasoning performed by the model. This can be
-    # useful for debugging and understanding the model's reasoning process.
-    # One of `concise` or `detailed`.
-    "concise"|"detailed"? summary?;
-};
-
-public type InputItem EasyInputMessage|Item|ItemReference;
-
-public type response record {
-    *ModelResponseProperties;
-    *ResponseProperties;
+    OpenAI\.Reasoning reasoning?;
+    boolean? background?;
+    int? max_tool_calls?;
+    # Configuration options for a text response from the model. Can be plain
+    # text or structured JSON data. Learn more:
+    # - [Text inputs and outputs](/docs/guides/text)
+    # - [Structured Outputs](/docs/guides/structured-outputs)
+    OpenAI\.ResponseTextParam text?;
+    # An array of tools the model may call while generating a response. You
+    # can specify which tool to use by setting the `tool_choice` parameter.
+    # We support the following categories of tools:
+    # - **Built-in tools**: Tools that are provided by OpenAI that extend the
+    # model's capabilities, like [web search](/docs/guides/tools-web-search)
+    # or [file search](/docs/guides/tools-file-search). Learn more about
+    # [built-in tools](/docs/guides/tools).
+    # - **MCP Tools**: Integrations with third-party systems via custom MCP servers
+    # or predefined connectors such as Google Drive and SharePoint. Learn more about
+    # [MCP Tools](/docs/guides/tools-connectors-mcp).
+    # - **Function calls (custom tools)**: Functions that are defined by you,
+    # enabling the model to call your own code with strongly typed arguments
+    # and outputs. Learn more about
+    # [function calling](/docs/guides/function-calling). You can also use
+    # custom tools to call your own code.
+    OpenAI\.ToolsArray tools?;
+    OpenAI\.ToolChoiceOptions|OpenAI\.ToolChoiceParam tool_choice?;
+    # Reference to a prompt template and its variables.
+    # [Learn more](/docs/guides/text?api-mode=responses#reusable-prompts).
+    OpenAI\.Prompt prompt?;
+    "auto"|"disabled"? truncation = "disabled";
     # Unique identifier for this Response.
     string id;
     # The object type of this resource - always set to `response`.
     "response" 'object;
-    # The status of the response generation. One of `completed`, `failed`, 
-    # `in_progress`, or `incomplete`.
-    "completed"|"failed"|"in_progress"|"incomplete" status?;
+    # The status of the response generation. One of `completed`, `failed`,
+    #   `in_progress`, `cancelled`, `queued`, or `incomplete`.
+    "completed"|"failed"|"in_progress"|"cancelled"|"queued"|"incomplete" status?;
     # Unix timestamp (in seconds) of when this Response was created.
-    decimal created_at;
+    int created_at;
+    string? completed_at?;
     # An error object returned when the model fails to generate a Response.
-    ResponseError? 'error;
-    # Details about why the response is incomplete.
-    response_incomplete_details? incomplete_details;
+    OpenAI\.ResponseError 'error;
+    OpenAI\.ResponseIncompleteDetails incomplete_details;
     # An array of content items generated by the model.
-    # 
-    # - The length and order of items in the `output` array is dependent
+    #   - The length and order of items in the `output` array is dependent
     #   on the model's response.
-    # - Rather than accessing the first item in the `output` array and 
+    #   - Rather than accessing the first item in the `output` array and
     #   assuming it's an `assistant` message with the content generated by
     #   the model, you might consider using the `output_text` property where
     #   supported in SDKs.
-    OutputItem[] output;
-    # SDK-only convenience property that contains the aggregated text output 
-    # from all `output_text` items in the `output` array, if any are present. 
-    # Supported in the Python and JavaScript SDKs.
+    OpenAI\.OutputItem[] output;
+    string|OpenAI\.InputItem[]? instructions;
     string? output_text?;
     # Represents token usage details including input tokens, output tokens,
     # a breakdown of output tokens, and the total tokens used.
-    ResponseUsage usage?;
+    OpenAI\.ResponseUsage usage?;
     # Whether to allow the model to run tool calls in parallel.
     boolean parallel_tool_calls = true;
-    # Inserts a system (or developer) message as the first item in the model's context.
-    # 
-    # When using along with `previous_response_id`, the instructions from a previous
-    # response will be not be carried over to the next response. This makes it simple
-    # to swap out system (or developer) messages in new responses.
-    string? instructions;
-    # Set of 16 key-value pairs that can be attached to an object. This can be
-    # useful for storing additional information about the object in a structured
-    # format, and querying for objects via API or the dashboard. 
-    # 
-    # Keys are strings with a maximum length of 64 characters. Values are strings
-    # with a maximum length of 512 characters.
-    Metadata? metadata;
-    # Model used to generate the responses.
-    string model;
-    # What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.
-    # We generally recommend altering this or `top_p` but not both.
-    decimal? temperature = 1;
-    # How the model should select which tool (or tools) to use when generating
-    # a response. See the `tools` parameter to see how to specify which tools
-    # the model can call.
-    ToolChoiceOptions|ToolChoiceTypes|ToolChoiceFunction tool_choice;
-    # An array of tools the model may call while generating a response. You 
-    # can specify which tool to use by setting the `tool_choice` parameter.
-    # 
-    # The two categories of tools you can provide the model are:
-    # 
-    # - **Built-in tools**: Tools that are provided by OpenAI that extend the
-    #   model's capabilities, like [web search](/docs/guides/tools-web-search)
-    #   or [file search](/docs/guides/tools-file-search). Learn more about
-    #   [built-in tools](/docs/guides/tools).
-    # - **Function calls (custom tools)**: Functions that are defined by you,
-    #   enabling the model to call your own code. Learn more about
-    #   [function calling](/docs/guides/function-calling).
-    Tool[] tools;
-    # An alternative to sampling with temperature, called nucleus sampling,
-    # where the model considers the results of the tokens with top_p probability
-    # mass. So 0.1 means only the tokens comprising the top 10% probability mass
-    # are considered.
-    # 
-    # We generally recommend altering this or `temperature` but not both.
-    decimal? top_p = 1;
+    # The conversation that this response belonged to. Input items and output items from this response were automatically added to this conversation.
+    OpenAI\.ConversationReference conversation?;
+    int? max_output_tokens?;
+    # The content filter results from RAI.
+    AzureContentFilterForResponsesAPI[] content_filters?;
 };
 
-public type FunctionToolCallOutputResource record {
-    *FunctionToolCallOutput;
-    # The unique ID of the function call tool output.
-    string id;
+public type OpenAI\.ConversationParam string|OpenAI\.ConversationParam\-2;
+
+public type AzureContentFilterResultsForResponsesAPI record {
+    # A content filter category for language related to anatomical organs and genitals, romantic relationships, acts
+    # portrayed in erotic or affectionate terms, pregnancy, physical sexual acts, including those portrayed as an
+    # assault or a forced sexual violent act against one's will, prostitution, pornography, and abuse.
+    AzureContentFilterSeverityResult sexual?;
+    # A content filter category that can refer to any content that attacks or uses pejorative or discriminatory
+    # language with reference to a person or identity group based on certain differentiating attributes of these groups
+    # including but not limited to race, ethnicity, nationality, gender identity and expression, sexual orientation,
+    # religion, immigration status, ability status, personal appearance, and body size.
+    AzureContentFilterSeverityResult hate?;
+    # A content filter category for language related to physical actions intended to hurt, injure, damage, or kill
+    # someone or something; describes weapons, guns and related entities, such as manufactures, associations,
+    # legislation, and so on.
+    AzureContentFilterSeverityResult violence?;
+    # A content filter category that describes language related to physical actions intended to purposely hurt, injure,
+    # damage one's body or kill oneself.
+    AzureContentFilterSeverityResult self_harm?;
+    # A detection result that identifies whether crude, vulgar, or otherwise objection language is present in the
+    # content.
+    AzureContentFilterDetectionResult profanity?;
+    # A collection of binary filtering outcomes for configured custom blocklists.
+    AzureContentFilterBlocklistResult custom_blocklists?;
+    # A collection of binary filtering outcomes for configured custom topics.
+    AzureContentFilterCustomTopicResult custom_topics?;
+    # If present, details about an error that prevented content filtering from completing its evaluation.
+    AzureContentFilterResultsForResponsesAPI_error 'error?;
+    # A detection result that describes user prompt injection attacks, where malicious users deliberately exploit
+    # system vulnerabilities to elicit unauthorized behavior from the LLM. This could lead to inappropriate content
+    # generation or violations of system-imposed restrictions.
+    AzureContentFilterDetectionResult jailbreak;
+    # A detection result that indicates if the execution flow still sticks the plan.
+    AzureContentFilterDetectionResult task_adherence;
+    # A detection result that describes a match against text protected under copyright or other status.
+    AzureContentFilterDetectionResult protected_material_text?;
+    # A detection result that describes a match against licensed code or other protected source material.
+    AzureContentFilterResultsForResponsesAPI_protected_material_code protected_material_code?;
+    AzureContentFilterCompletionTextSpanDetectionResult ungrounded_material?;
+    # A detection result that describes matches against Personal Identifiable Information with configurable subcategories.
+    AzureContentFilterPersonallyIdentifiableInformationResult personally_identifiable_information?;
+    # A detection result that describes attacks on systems powered by Generative AI models that can happen every time
+    # an application processes information that wasn’t directly authored by either the developer of the application or
+    # the user.
+    AzureContentFilterDetectionResult indirect_attack?;
 };
 
-public type ModelResponseProperties record {
-    # Model used to generate the responses.
-    string model?;
-    # Set of 16 key-value pairs that can be attached to an object. This can be
-    # useful for storing additional information about the object in a structured
-    # format, and querying for objects via API or the dashboard. 
-    # 
-    # Keys are strings with a maximum length of 64 characters. Values are strings
-    # with a maximum length of 512 characters.
-    Metadata? metadata?;
-    # What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.
-    # We generally recommend altering this or `top_p` but not both.
-    decimal? temperature = 1;
-    # An alternative to sampling with temperature, called nucleus sampling,
-    # where the model considers the results of the tokens with top_p probability
-    # mass. So 0.1 means only the tokens comprising the top 10% probability mass
-    # are considered.
-    # 
-    # We generally recommend altering this or `temperature` but not both.
-    decimal? top_p = 1;
-    # A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. [Learn more](/docs/guides/safety-best-practices#end-user-ids).
-    string user?;
+public type OpenAI\.ToolChoiceParam record {
+    OpenAI\.ToolChoiceParamType 'type;
 };
 
-# **o-series models only** 
-# 
-# Constrains effort on reasoning for 
-# [reasoning models](https://platform.openai.com/docs/guides/reasoning).
-# Currently supported values are `low`, `medium`, and `high`. Reducing
-# reasoning effort can result in faster responses and fewer tokens used
-# on reasoning in a response.
-public type ReasoningEffort "low"|"medium"|"high"?;
-
-# A double click action.
-public type DoubleClick record {
-    # Specifies the event type. For a double click action, this property is 
-    # always set to `double_click`.
-    "double_click" 'type = "double_click";
-    # The x-coordinate where the double click occurred.
-    int x;
-    # The y-coordinate where the double click occurred.
-    int y;
+public type OpenAI\.Tool record {
+    OpenAI\.ToolType 'type;
 };
 
-# A screenshot action.
-public type Screenshot record {
-    # Specifies the event type. For a screenshot action, this property is 
-    # always set to `screenshot`.
-    "screenshot" 'type = "screenshot";
+public type OpenAI\.ReasoningEffort "none"|"minimal"|"low"|"medium"|"high"|"xhigh"?;
+
+# A content filter detection result for Personally Identifiable Information that includes harm extensions.
+public type AzureContentFilterPersonallyIdentifiableInformationResult AzureContentFilterDetectionResult;
+
+public type OpenAI\.ItemResourceType string|"message"|"output_message"|"file_search_call"|"computer_call"|"computer_call_output"|"web_search_call"|"function_call"|"function_call_output"|"tool_search_call"|"tool_search_output"|"reasoning"|"compaction"|"image_generation_call"|"code_interpreter_call"|"local_shell_call"|"local_shell_call_output"|"shell_call"|"shell_call_output"|"apply_patch_call"|"apply_patch_call_output"|"mcp_list_tools"|"mcp_approval_request"|"mcp_approval_response"|"mcp_call"|"custom_tool_call"|"custom_tool_call_output";
+
+public type OpenAI\.InputItemType string|"message"|"output_message"|"file_search_call"|"computer_call"|"computer_call_output"|"web_search_call"|"function_call"|"function_call_output"|"tool_search_call"|"tool_search_output"|"reasoning"|"compaction"|"image_generation_call"|"code_interpreter_call"|"local_shell_call"|"local_shell_call_output"|"shell_call"|"shell_call_output"|"apply_patch_call"|"apply_patch_call_output"|"mcp_list_tools"|"mcp_approval_request"|"mcp_approval_response"|"mcp_call"|"custom_tool_call_output"|"custom_tool_call"|"item_reference"|"tool_approval_response";
+
+public type OpenAI\.Metadata record {
 };
 
-# A tool call to a computer use tool. See the 
-# [computer use guide](/docs/guides/tools-computer-use) for more information.
-public type ComputerToolCall record {
-    # The type of the computer call. Always `computer_call`.
-    "computer_call" 'type = "computer_call";
-    # The unique ID of the computer call.
-    string id;
-    # An identifier used when responding to the tool call with output.
-    string call_id;
-    ComputerAction action;
-    # The pending safety checks for the computer call.
-    ComputerToolCallSafetyCheck[] pending_safety_checks;
-    # The status of the item. One of `in_progress`, `completed`, or
-    # `incomplete`. Populated when items are returned via API.
-    "in_progress"|"completed"|"incomplete" status;
+# A labeled content filter result item that indicates whether the content was filtered and what the qualitative
+# severity level of the content was, as evaluated against content filter configuration for the category.
+public type AzureContentFilterSeverityResult record {
+    # Whether the content severity resulted in a content filtering action.
+    boolean filtered;
+    # The labeled severity of the content.
+    "safe"|"low"|"medium"|"high" severity;
 };
 
-# A list of Response items.
-public type responseItemList record {
-    # The type of object returned, must be `list`.
+public type OpenAI\.InputItem record {
+    OpenAI\.InputItemType 'type;
+};
+
+public type OpenAI\.ResponseItemList record {
     "list" 'object;
-    # A list of items used to generate this response.
-    ItemResource[] data;
-    # Whether there are more items available.
+    OpenAI\.ItemResource[] data;
     boolean has_more;
-    # The ID of the first item in the list.
     string first_id;
-    # The ID of the last item in the list.
     string last_id;
 };
 
-# A message input to the model with a role indicating instruction following
-# hierarchy. Instructions given with the `developer` or `system` role take
-# precedence over instructions given with the `user` role.
-public type InputMessage record {
-    # The type of the message input. Always set to `message`.
-    "message" 'type?;
-    # The role of the message input. One of `user`, `system`, or `developer`.
-    "user"|"system"|"developer" role;
-    # The status of item. One of `in_progress`, `completed`, or
-    # `incomplete`. Populated when items are returned via API.
-    "in_progress"|"completed"|"incomplete" status?;
-    # A list of one or many input items to the model, containing different content 
-    # types.
-    InputMessageContentList content;
+public type OpenAI\.Reasoning record {
+    OpenAI\.ReasoningEffort? effort?;
+    "auto"|"concise"|"detailed"? summary?;
+    "auto"|"concise"|"detailed"? generate_summary?;
+};
+
+public type OpenAI\.CreateResponse record {
+    OpenAI\.Metadata metadata?;
+    int? top_logprobs?;
+    decimal? temperature = 1;
+    decimal? top_p = 1;
+    string user?;
+    string safety_identifier?;
+    string prompt_cache_key?;
+    "in_memory"|"24h"? prompt_cache_retention?;
+    string? previous_response_id?;
+    string model?;
+    OpenAI\.Reasoning reasoning?;
+    boolean? background?;
+    int? max_tool_calls?;
+    OpenAI\.ResponseTextParam text?;
+    OpenAI\.ToolsArray tools?;
+    OpenAI\.ToolChoiceOptions|OpenAI\.ToolChoiceParam tool_choice?;
+    OpenAI\.Prompt prompt?;
+    "auto"|"disabled"? truncation = "disabled";
+    OpenAI\.InputParam input?;
+    OpenAI\.IncludeEnum[]? include?;
+    boolean? parallel_tool_calls = true;
+    boolean? store = true;
+    string? instructions?;
+    boolean? 'stream?;
+    OpenAI\.ResponseStreamOptions stream_options?;
+    OpenAI\.ConversationParam conversation?;
+    OpenAI\.ContextManagementParam[]? context_management?;
+    int? max_output_tokens?;
+};
+
+public type OpenAI\.ToolChoiceParamType string|"allowed_tools"|"function"|"mcp"|"custom"|"apply_patch"|"shell"|"file_search"|"web_search_preview"|"computer_use_preview"|"web_search_preview_2025_03_11"|"image_generation"|"code_interpreter"|"computer"|"computer_use";
+
+# A collection of true/false filtering results for configured custom blocklists.
+public type AzureContentFilterBlocklistResult record {
+    # A value indicating whether any of the detailed blocklists resulted in a filtering action.
+    boolean filtered;
+    # The pairs of individual blocklist IDs and whether they resulted in a filtering action.
+    AzureContentFilterBlocklistResult_details[] details?;
+};
+
+public type OpenAI\.Prompt record {
+    string id;
+    string? version?;
+    OpenAI\.ResponsePromptVariables variables?;
+};
+
+public type OpenAI\.ToolType string|"function"|"file_search"|"computer"|"computer_use_preview"|"web_search"|"mcp"|"code_interpreter"|"image_generation"|"local_shell"|"shell"|"custom"|"namespace"|"tool_search"|"web_search_preview"|"apply_patch";
+
+public type OpenAI\.ConversationParam\-2 record {
+    string id;
 };

@@ -34,9 +34,10 @@ To use the `Azure OpenAI Responses` connector in your Ballerina application, upd
 
 ### Step 1: Import the module
 
-Import the `ballerinax/azure.openai.responses` module.
+Import the `ballerinax/azure.openai.responses` module. The `ballerina/io` module is also imported to print the response.
 
 ```ballerina
+import ballerina/io;
 import ballerinax/azure.openai.responses;
 ```
 
@@ -69,8 +70,8 @@ public function main() returns error? {
         input: "What is the Ballerina programming language?"
     };
 
-    responses:inline_response_200_5 response = check azureOpenAI->/responses.post(request);
-    io:println(response.output_text);
+    responses:inline_response_200 response = check azureOpenAI->/responses.post(request);
+    io:println(response?.output_text);
 }
 ```
 
@@ -84,8 +85,7 @@ bal run
 
 The `Azure OpenAI Responses` connector provides practical examples illustrating usage in various scenarios. Explore these [examples](https://github.com/ballerina-platform/module-ballerinax-azure.openai.responses/tree/main/examples/), covering the following use cases:
 
-1. [Simple response](https://github.com/ballerina-platform/module-ballerinax-azure.openai.responses/tree/main/examples/simple-response) - Create and retrieve a model response using the Azure OpenAI Responses API.
-2. [Background response](https://github.com/ballerina-platform/module-ballerinax-azure.openai.responses/tree/main/examples/background-response) - Run a model response in the background and cancel it when no longer needed.
+1. [Simple response](https://github.com/ballerina-platform/module-ballerinax-azure.openai.responses/tree/main/examples/simple-response) - Create a model response using the Azure OpenAI Responses API.
 
 ## Build from the source
 

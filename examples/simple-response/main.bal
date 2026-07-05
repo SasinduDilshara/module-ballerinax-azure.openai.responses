@@ -33,11 +33,11 @@ public function main() returns error? {
         input: "Explain what the Ballerina programming language is in one sentence."
     };
 
-    responses:inline_response_200_5 createResponse = check azureOpenAI->/responses.post(request);
+    responses:inline_response_200 createResponse = check azureOpenAI->/responses.post(request);
     io:println("Created response ID: " + createResponse.id);
     io:println("Status: " + (createResponse.status ?: "unknown"));
 
-    string? outputText = createResponse.output_text;
+    string? outputText = createResponse?.output_text;
     if outputText is string {
         io:println("Response text: " + outputText);
     }

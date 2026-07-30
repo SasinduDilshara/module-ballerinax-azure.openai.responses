@@ -548,9 +548,6 @@ components:
           format: int32
     AzureContentFilterResultsForResponsesAPI:
       type: object
-      required:
-      - jailbreak
-      - task_adherence
       properties:
         sexual:
           allOf:
@@ -1385,9 +1382,12 @@ components:
           format: unixtime
           description: Unix timestamp (in seconds) of when this Response was created.
         completed_at:
-          type: string
-          format: date-time
+          type: number
+          format: unixtime
           nullable: true
+          description: |-
+            Unix timestamp (in seconds) of when this Response was completed.
+              Only present when the status is `completed`.
         error:
           allOf:
           - $ref: '#/components/schemas/OpenAIResponseError'
@@ -3490,9 +3490,12 @@ components:
           format: unixtime
           description: Unix timestamp (in seconds) of when this Response was created.
         completed_at:
-          type: string
-          format: date-time
+          type: number
+          format: unixtime
           nullable: true
+          description: |-
+            Unix timestamp (in seconds) of when this Response was completed.
+              Only present when the status is `completed`.
         error:
           allOf:
           - $ref: '#/components/schemas/OpenAIResponseError'

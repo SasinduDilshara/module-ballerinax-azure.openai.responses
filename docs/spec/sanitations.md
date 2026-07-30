@@ -88,6 +88,77 @@ These changes are done in order to improve the overall usability, and as workaro
 
    - **Reason**: In OpenAPI 3.0.0 a `$ref` overrides any sibling keywords, so the sibling `nullable: true` was ignored and `error`/`incomplete_details` were generated as non-nullable (`OpenAIResponseError`, `OpenAIResponseIncompleteDetails`). Azure returns `"error": null` on any non-failed response and `"incomplete_details": null` unless the response is incomplete, so these required fields must be nullable. Wrapping the `$ref` in `allOf` lets `nullable: true` apply, generating `OpenAIResponseError?` and `OpenAIResponseIncompleteDetails?`.
 
+10. **Fixed the `completed_at` timestamp field type (was `string`, now a number)**:
+
+    - **Changed Schemas**: `InlineResponse200` and the structurally identical `OpenAIResponse` — the
+      `completed_at` property.
+    - **Original**:
+
+      ```yaml
+      completed_at:
+        type: string
+        format: date-time
+        nullable: true
+      ```
+
+    - **Updated**:
+
+      ```yaml
+      completed_at:
+        type: number
+        format: unixtime
+        nullable: true
+        description: |-
+          Unix timestamp (in seconds) of when this Response was completed.
+            Only present when the status is `completed`.
+      ```
+
+    - **Reason**: `completed_at` is a **Unix timestamp in seconds** — a number, not a date-time
+      string. The Azure spec wrongly typed it as `type: string`, so the tool generated
+      `string? completed_at?`. At runtime Azure returns a number (e.g. `1783589910`), and
+      `ballerina/data.jsondata` then fails with
+      `"Payload binding failed: incompatible expected type 'string?' for value '1,783,...'"`,
+      breaking every Responses call. Changing it to `type: number, format: unixtime` matches the
+      official OpenAI Responses spec for this field (and its sibling `created_at`, already a Unix
+      timestamp), so the tool now generates `decimal? completed_at?`, which correctly binds the
+      numeric value.
+
+11. **Made `jailbreak` and `task_adherence` optional in `AzureContentFilterResultsForResponsesAPI`**:
+
+    - **Changed Schema**: `AzureContentFilterResultsForResponsesAPI` — removed its
+      `required: [jailbreak, task_adherence]` list.
+    - **Original**:
+
+      ```yaml
+      AzureContentFilterResultsForResponsesAPI:
+        type: object
+        required:
+        - jailbreak
+        - task_adherence
+        properties:
+      ```
+
+    - **Updated**:
+
+      ```yaml
+      AzureContentFilterResultsForResponsesAPI:
+        type: object
+        properties:
+      ```
+
+    - **Reason**: `jailbreak` and `task_adherence` are newer Azure content-filter detection
+      categories that are **not returned by every deployment/region**. The spec marked them
+      `required`, so the tool generated non-optional fields; when Azure omits them,
+      `ballerina/data.jsondata` fails with
+      `"Payload binding failed: required field 'task_adherence' not present in JSON"`, breaking
+      every Responses call. Every other category on this object (`sexual`, `hate`, `violence`,
+      `self_harm`, `profanity`, `custom_blocklists`, `custom_topics`, `protected_material_text`, …)
+      is already optional; making `jailbreak`/`task_adherence` optional too matches how Azure
+      actually returns content-filter results (only the configured/returned categories are present).
+      The fields become `AzureContentFilterDetectionResult jailbreak?;` and
+      `AzureContentFilterDetectionResult task_adherence?;`, which bind whether or not Azure includes
+      them.
+
 ## OpenAPI cli command
 
 The following command was used to generate the Ballerina client from the OpenAPI specification. The command should be executed from the repository root directory.

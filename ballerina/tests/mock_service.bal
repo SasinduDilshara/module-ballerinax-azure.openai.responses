@@ -19,7 +19,7 @@ import ballerina/log;
 
 listener http:Listener httpListener = new (9090);
 
-// A mock of the Azure OpenAI Responses endpoints. The request body is bound as
+// A mock of the Azure OpenAI Responses endpoint. The request body is bound as
 // `map<json>` so the mock accepts any valid `OpenAICreateResponse` shape (the
 // `input` field can be a plain string or an array of input items) without
 // re-implementing the union data binding on the server side.
@@ -34,58 +34,28 @@ http:Service mockService = service object {
             return <http:BadRequest>{body: {"error": {"code": "invalid_request", "message": "model must not be empty"}}};
         }
         string model = modelField is string ? modelField : "gpt-4o-mini";
-        return buildResponse("resp-mock00001", model, "completed", "Mock response generated successfully.");
-    }
-
-    // Retrieves a model response with the given ID.
-    resource function get responses/[string response_id]() returns json {
-        return buildResponse(response_id, "gpt-4o-mini", "completed", "Retrieved mock response.");
-    }
-
-    // Deletes a response by ID.
-    resource function delete responses/[string response_id]() returns json {
-        return {
-            "object": "response.deleted",
-            "id": response_id,
-            "deleted": true
-        };
-    }
-
-    // Cancels a model response with the given ID.
-    resource function post responses/[string response_id]/cancel() returns json {
-        return buildResponse(response_id, "gpt-4o-mini", "cancelled", ());
-    }
-
-    // Returns a list of input items for a given response.
-    resource function get responses/[string response_id]/input_items() returns json {
-        return {
-            "object": "list",
-            "data": [
-                {"type": "message"},
-                {"type": "reasoning"}
-            ],
-            "has_more": false,
-            "first_id": "msg-0001",
-            "last_id": "msg-0002"
-        };
+        return buildResponse("resp-mock00001", model, "Mock response generated successfully.");
     }
 };
 
 // Builds a minimal but schema-valid `InlineResponse200` payload. `error` and
 // `incomplete_details` are required but nullable, so a successful response
 // returns them as `null` (matching Azure's real behaviour).
-isolated function buildResponse(string id, string model, string status, string? outputText) returns json {
+//
+// Note that `output_text` is deliberately absent from the payload: it is a
+// convenience property that the official SDKs compute on the client side, and the
+// REST API never sends it. The generated text is carried by the `output` array.
+isolated function buildResponse(string id, string model, string outputText) returns json {
     return {
         "id": id,
         "object": "response",
         "created_at": 1723091495,
         "completed_at": null,
-        "status": status,
+        "status": "completed",
         "model": model,
         "tool_choice": "auto",
         "tools": [],
-        "output": [],
-        "output_text": outputText,
+        "output": buildOutput(outputText),
         "instructions": null,
         "metadata": null,
         // `error` and `incomplete_details` are required but nullable; a successful
@@ -102,6 +72,36 @@ isolated function buildResponse(string id, string model, string status, string? 
         "parallel_tool_calls": true,
         "content_filters": []
     };
+}
+
+// Builds the `output` array in the shape the Responses API actually returns: a list of
+// output items, where an assistant message carries its text in `content` entries of type
+// `output_text`. A `reasoning` item is included ahead of the message so the tests cover
+// skipping over output items that hold no text content.
+isolated function buildOutput(string outputText) returns json[] {
+    return [
+        {
+            "id": "rs-mock00001",
+            "type": "reasoning",
+            "summary": []
+        },
+        {
+            "id": "msg-mock00001",
+            // The wire value for an assistant message is `message`. The `OpenAIOutputItemType`
+            // enum generated from the Azure spec lists the TypeSpec-internal `output_message`
+            // instead, which is why consumers should not key off the item type alone.
+            "type": "message",
+            "status": "completed",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "output_text",
+                    "text": outputText,
+                    "annotations": []
+                }
+            ]
+        }
+    ];
 }
 
 function init() returns error? {

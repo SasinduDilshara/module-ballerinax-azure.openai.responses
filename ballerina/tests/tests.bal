@@ -26,14 +26,43 @@ configurable string serviceUrl = isLiveServer ? os:getEnv("AZURE_OPENAI_SERVICE_
 final string mockServiceUrl = "http://localhost:9090";
 const AzureAIFoundryModelsApiVersion apiVersion = "v1";
 
-// Client authenticated with a bearer token (default for both mock and live runs).
+// Client authenticated with the Azure OpenAI API key, which the connector sends in the
+// `api-key` header. This is the authentication method described in the setup guide, so it
+// is the default for both mock and live runs.
 final Client azureOpenAI = check initClient();
 
 isolated function initClient() returns Client|error {
     if isLiveServer {
-        return new ({auth: {token}}, serviceUrl);
+        return new ({auth: {api\-key: apiKey}}, serviceUrl);
     }
-    return new ({auth: {token}}, mockServiceUrl);
+    return new ({auth: {api\-key: apiKey}}, mockServiceUrl);
+}
+
+// Concatenates the text of every `output_text` content part in an `output` array.
+//
+// The `output_text` field on the response is a convenience property computed by the
+// official SDKs; the REST API does not send it, so the generated text has to be read from
+// `output`. Content parts are collected regardless of the parent item type, because the
+// wire value for an assistant message (`message`) differs from the value listed in the
+// `OpenAIOutputItemType` enum generated from the Azure spec (`output_message`).
+isolated function extractOutputText(OpenAIOutputItem[] output) returns string {
+    string[] texts = [];
+    foreach OpenAIOutputItem item in output {
+        anydata content = item["content"];
+        if content !is anydata[] {
+            continue;
+        }
+        foreach anydata part in content {
+            if part !is map<anydata> || part["type"] != "output_text" {
+                continue;
+            }
+            anydata text = part["text"];
+            if text is string {
+                texts.push(text);
+            }
+        }
+    }
+    return string:'join("", ...texts);
 }
 
 @test:Config {
@@ -54,18 +83,71 @@ isolated function testCreateResponse() returns error? {
 @test:Config {
     groups: ["mock_tests"]
 }
-isolated function testCreateResponseWithApiKeyAuth() returns error? {
-    // Exercises the API key authentication branch of the client initialization.
-    // `ApiKeysConfig` requires both the `api-key` and `authorization` fields.
-    Client apiKeyClient = check new ({auth: {api\-key: apiKey, authorization: "Bearer " + token}}, mockServiceUrl);
+isolated function testCreateResponseWithBearerTokenAuth() returns error? {
+    // Exercises the bearer token branch of the client initialization. This header carries a
+    // Microsoft Entra ID access token; an Azure OpenAI API key must not be sent this way,
+    // because Azure only accepts keys in the `api-key` header.
+    Client bearerClient = check new ({auth: {token}}, mockServiceUrl);
 
     OpenAICreateResponse request = {
         model: "gpt-4o-mini",
         input: "Ping"
     };
 
-    InlineResponse200 response = check apiKeyClient->/responses.post(request);
+    InlineResponse200 response = check bearerClient->/responses.post(request);
     test:assertEquals(response.'object, "response");
+}
+
+@test:Config {
+    groups: ["live_tests", "mock_tests"]
+}
+isolated function testResponseTextIsReadFromOutputArray() returns error? {
+    OpenAICreateResponse request = {
+        model: "gpt-4o-mini",
+        input: "This is a test message"
+    };
+
+    InlineResponse200 response = check azureOpenAI->/responses.post(request, api\-version = apiVersion);
+
+    // The generated text must be reachable by walking `output`, which is the only
+    // representation the REST API actually sends.
+    test:assertTrue(response.output.length() > 0, msg = "Expected a non-empty output array");
+    test:assertTrue(extractOutputText(response.output).length() > 0,
+            msg = "Expected assistant text in the output array");
+}
+
+@test:Config {
+    groups: ["mock_tests"]
+}
+isolated function testOutputTextIsNotSentByTheService() returns error? {
+    // `output_text` is computed client side by the official SDKs and is absent from the
+    // REST payload, so reading it yields nil. Guards the docs and the example against
+    // regressing to `response?.output_text`.
+    OpenAICreateResponse request = {
+        model: "gpt-4o-mini",
+        input: "This is a test message"
+    };
+
+    InlineResponse200 response = check azureOpenAI->/responses.post(request, api\-version = apiVersion);
+    test:assertTrue(response?.output_text is (), msg = "output_text must not be populated from the payload");
+    test:assertEquals(extractOutputText(response.output), "Mock response generated successfully.");
+}
+
+@test:Config {
+    groups: ["live_tests", "mock_tests"]
+}
+isolated function testNullableRequiredFieldsBind() returns error? {
+    OpenAICreateResponse request = {
+        model: "gpt-4o-mini",
+        input: "This is a test message"
+    };
+
+    InlineResponse200 response = check azureOpenAI->/responses.post(request, api\-version = apiVersion);
+
+    // `error` and `incomplete_details` are required but nullable; on a successful
+    // (non-failed, complete) response they are null. This exercises the nullable fields.
+    test:assertTrue(response.'error is (), "Expected null error on a successful response");
+    test:assertTrue(response.incomplete_details is (), "Expected null incomplete_details");
 }
 
 @test:Config {
@@ -106,47 +188,4 @@ isolated function testCreateResponseWithEmptyModelReturnsError() {
     if response is http:ClientRequestError {
         test:assertEquals(response.detail().statusCode, 400);
     }
-}
-
-@test:Config {
-    groups: ["mock_tests"]
-}
-isolated function testGetResponse() returns error? {
-    InlineResponse200 response = check azureOpenAI->/responses/["resp-mock00001"].get(api\-version = apiVersion);
-    test:assertEquals(response.id, "resp-mock00001");
-    test:assertEquals(response.'object, "response");
-    // `error` and `incomplete_details` are required but nullable; on a successful
-    // (non-failed, complete) response they are null. This exercises the nullable fields.
-    test:assertTrue(response.'error is (), "Expected null error on a successful response");
-    test:assertTrue(response.incomplete_details is (), "Expected null incomplete_details");
-}
-
-@test:Config {
-    groups: ["mock_tests"]
-}
-isolated function testDeleteResponse() returns error? {
-    InlineResponse2001 response = check azureOpenAI->/responses/["resp-mock00001"].delete(api\-version = apiVersion);
-    test:assertEquals(response.id, "resp-mock00001");
-    test:assertEquals(response.'object, "response.deleted");
-    test:assertTrue(response.deleted);
-}
-
-@test:Config {
-    groups: ["mock_tests"]
-}
-isolated function testCancelResponse() returns error? {
-    InlineResponse200 response = check azureOpenAI->/responses/["resp-mock00001"]/cancel.post(api\-version = apiVersion);
-    test:assertEquals(response.id, "resp-mock00001");
-    test:assertEquals(response.status, "cancelled");
-}
-
-@test:Config {
-    groups: ["mock_tests"]
-}
-isolated function testListInputItems() returns error? {
-    OpenAIResponseItemList response = check azureOpenAI->/responses/["resp-mock00001"]/input_items.get(api\-version = apiVersion, 'limit = 20);
-    test:assertEquals(response.'object, "list");
-    test:assertEquals(response.data.length(), 2);
-    test:assertFalse(response.has_more);
-    test:assertEquals(response.data[0].'type, "message");
 }

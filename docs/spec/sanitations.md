@@ -9,11 +9,12 @@ This document records the sanitation done on top of the official OpenAPI specifi
 The OpenAPI specification is obtained from the [Azure REST API Specs](https://github.com/Azure/azure-rest-api-specs/blob/main/specification/ai/data-plane/OpenAI.v1/azure-v1-v1-generated.yaml).
 These changes are done in order to improve the overall usability, and as workarounds for some known language limitations.
 
-1. **Extracted only Responses API endpoint from the full specification**:
+1. **Extracted only the Responses API create operation from the full specification**:
 
    - **Original**: Full Azure AI Foundry Models Service spec with all endpoints (batches, chat completion, responses, files, etc.)
-   - **Updated**: Only the `/responses` path and its related schemas are retained
-   - **Reason**: This connector module only covers the Responses API. Including unrelated endpoints would generate unnecessary code.
+   - **Updated**: Only `POST /responses` and the schemas reachable from it are retained. See item 14 for the
+     removal of the remaining Responses operations and the schemas that became unreachable.
+   - **Reason**: This connector module only covers creating model responses. Including unrelated endpoints would generate unnecessary code.
 
 2. **Converted nullable type arrays to `nullable: true`**:
 
@@ -158,6 +159,76 @@ These changes are done in order to improve the overall usability, and as workaro
       The fields become `AzureContentFilterDetectionResult jailbreak?;` and
       `AzureContentFilterDetectionResult task_adherence?;`, which bind whether or not Azure includes
       them.
+
+12. **Removed the redundant `ApiKeyAuth_` security scheme**:
+
+    - **Changed**: The `ApiKeyAuth_` entry under `components.securitySchemes` (an `apiKey` scheme
+      named `authorization`) and its corresponding entry in the top-level `security` list.
+    - **Original**:
+
+      ```yaml
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyAuth_: []
+      - OAuth2Auth:
+        - https://cognitiveservices.azure.com/.default
+      ```
+
+    - **Updated**:
+
+      ```yaml
+      security:
+      - ApiKeyAuth: []
+      - OAuth2Auth:
+        - https://cognitiveservices.azure.com/.default
+      ```
+
+    - **Reason**: A list of security requirement objects is an **OR** in OpenAPI 3.0, so the three
+      entries are alternatives. The Ballerina OpenAPI tool, however, collapses every `apiKey` scheme
+      into a single `ApiKeysConfig` record with all fields **required**, and emits code that sets
+      every one of those headers on every request. That turned the alternatives into an AND: users
+      authenticating with an API key had to supply an `authorization` value as well, and the client
+      then sent a bogus `Authorization` header next to a valid `api-key` header, which Azure can
+      reject with a `401`.
+
+      `ApiKeyAuth_` is redundant: it describes a raw token in the `Authorization` header, which is
+      the Microsoft Entra ID path already covered by `OAuth2Auth`. The generated
+      `ConnectionConfig.auth` field is `http:BearerTokenConfig|ApiKeysConfig`, so removing the
+      duplicate scheme loses no capability — API key authentication uses
+      `ApiKeysConfig` and Entra ID authentication uses `http:BearerTokenConfig`. After the change
+      `ApiKeysConfig` is `record {| string api\-key; |}` and each resource method sets only the
+      `api-key` header.
+
+13. **Documented `output_text` as an SDK-only convenience property**:
+
+    - **Changed Schemas**: `InlineResponse200` and the structurally identical `OpenAIResponse` — the
+      `output_text` property.
+    - **Updated**: Added a `description` explaining that the field is computed client side and is not
+      part of the REST payload.
+    - **Reason**: `output_text` is not returned by the service. The official OpenAI SDKs synthesize it
+      by concatenating the `text` of every `output_text` content part in `output`; it survives in the
+      Azure specification only because that document is machine-derived from OpenAI's. Without a
+      description the generated field (`string? output_text?;`) looks like an ordinary response field,
+      and reading it silently yields nil. The description flows into the generated Ballerina doc
+      comment and points users to the `output` array instead.
+
+      The field itself is retained rather than removed, because doing so would be a breaking change to
+      the response record and the behaviour has not been confirmed against every Azure deployment.
+
+14. **Reduced the document to `POST /responses` and pruned every unreachable schema**:
+
+    - **Removed paths**: `GET /responses/{response_id}`, `DELETE /responses/{response_id}`,
+      `POST /responses/{response_id}/cancel`, and `GET /responses/{response_id}/input_items`.
+    - **Removed schemas**: 52 of the 103 component schemas, leaving 51. The document shrank from
+      3652 to 1298 lines. The removed set is exactly the set of schemas that no `$ref` chain from
+      the retained operation reaches:
+
+      | Group | Count | Examples |
+      |-------|-------|----------|
+      | Server-sent event schemas for streaming | 36 | `OpenAIResponseStreamEvent`, `OpenAIResponseTextDeltaEvent`, `OpenAIResponseCreatedEvent` |
+      | Schemas used only by the removed operations | 4 | `InlineResponse2001`, `OpenAIResponseItemList`, `OpenAIItemResource`, `OpenAIItemResourceType` |
+      | Content schemas orphaned by the subtype removal | 11 | `OpenAIInputTextContent`, `OpenAIOutputContent`, `OpenAIAnnotation`, `OpenAIResponseLogProb` |
+      | Duplicate of the retained response schema | 1 | `OpenAIResponse` (structurally identical to `InlineResponse200`) |
 
 ## OpenAPI cli command
 

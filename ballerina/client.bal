@@ -49,7 +49,6 @@ public isolated client class Client {
         map<anydata> headerValues = {...headers};
         if self.apiKeyConfig is ApiKeysConfig {
             headerValues["api-key"] = self.apiKeyConfig?.api\-key;
-            headerValues["authorization"] = self.apiKeyConfig?.authorization;
         }
         resourcePath = resourcePath + check getPathForQueryParam(queries);
         map<string|string[]> httpHeaders = http:getHeaderMap(headerValues);
@@ -57,75 +56,5 @@ public isolated client class Client {
         json jsonBody = jsondata:toJson(payload);
         request.setPayload(jsonBody, "application/json");
         return self.clientEp->post(resourcePath, request, httpHeaders);
-    }
-
-    # Retrieves a model response with the given ID.
-    #
-    # + headers - Headers to be sent with the request 
-    # + queries - Queries to be sent with the request 
-    # + return - The request has succeeded. 
-    resource isolated function get responses/[string response_id](map<string|string[]> headers = {}, *GetResponseQueries queries) returns InlineResponse200|error {
-        string resourcePath = string `/responses/${getEncodedUri(response_id)}`;
-        map<anydata> headerValues = {...headers};
-        if self.apiKeyConfig is ApiKeysConfig {
-            headerValues["api-key"] = self.apiKeyConfig?.api\-key;
-            headerValues["authorization"] = self.apiKeyConfig?.authorization;
-        }
-        map<Encoding> queryParamEncoding = {"include[]": {style: FORM, explode: true}};
-        resourcePath = resourcePath + check getPathForQueryParam(queries, queryParamEncoding);
-        map<string|string[]> httpHeaders = http:getHeaderMap(headerValues);
-        return self.clientEp->get(resourcePath, httpHeaders);
-    }
-
-    # Deletes a response by ID.
-    #
-    # + headers - Headers to be sent with the request 
-    # + queries - Queries to be sent with the request 
-    # + return - The request has succeeded. 
-    resource isolated function delete responses/[string response_id](map<string|string[]> headers = {}, *DeleteResponseQueries queries) returns InlineResponse2001|error {
-        string resourcePath = string `/responses/${getEncodedUri(response_id)}`;
-        map<anydata> headerValues = {...headers};
-        if self.apiKeyConfig is ApiKeysConfig {
-            headerValues["api-key"] = self.apiKeyConfig?.api\-key;
-            headerValues["authorization"] = self.apiKeyConfig?.authorization;
-        }
-        resourcePath = resourcePath + check getPathForQueryParam(queries);
-        map<string|string[]> httpHeaders = http:getHeaderMap(headerValues);
-        return self.clientEp->delete(resourcePath, headers = httpHeaders);
-    }
-
-    # Cancels a model response with the given ID. Only responses created with the background parameter set to true can be cancelled.
-    #
-    # + headers - Headers to be sent with the request 
-    # + queries - Queries to be sent with the request 
-    # + return - The request has succeeded. 
-    resource isolated function post responses/[string response_id]/cancel(map<string|string[]> headers = {}, *CancelResponseQueries queries) returns InlineResponse200|error {
-        string resourcePath = string `/responses/${getEncodedUri(response_id)}/cancel`;
-        map<anydata> headerValues = {...headers};
-        if self.apiKeyConfig is ApiKeysConfig {
-            headerValues["api-key"] = self.apiKeyConfig?.api\-key;
-            headerValues["authorization"] = self.apiKeyConfig?.authorization;
-        }
-        resourcePath = resourcePath + check getPathForQueryParam(queries);
-        map<string|string[]> httpHeaders = http:getHeaderMap(headerValues);
-        http:Request request = new;
-        return self.clientEp->post(resourcePath, request, httpHeaders);
-    }
-
-    # Returns a list of input items for a given response.
-    #
-    # + headers - Headers to be sent with the request 
-    # + queries - Queries to be sent with the request 
-    # + return - The request has succeeded. 
-    resource isolated function get responses/[string response_id]/input_items(map<string|string[]> headers = {}, *ListInputItemsQueries queries) returns OpenAIResponseItemList|error {
-        string resourcePath = string `/responses/${getEncodedUri(response_id)}/input_items`;
-        map<anydata> headerValues = {...headers};
-        if self.apiKeyConfig is ApiKeysConfig {
-            headerValues["api-key"] = self.apiKeyConfig?.api\-key;
-            headerValues["authorization"] = self.apiKeyConfig?.authorization;
-        }
-        resourcePath = resourcePath + check getPathForQueryParam(queries);
-        map<string|string[]> httpHeaders = http:getHeaderMap(headerValues);
-        return self.clientEp->get(resourcePath, httpHeaders);
     }
 }

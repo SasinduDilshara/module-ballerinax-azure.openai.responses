@@ -6,6 +6,8 @@ You need an API key and endpoint URL from Azure OpenAI.
 
 To obtain these, refer to the [setup guide](https://github.com/ballerina-platform/module-ballerinax-azure.openai.responses/blob/main/ballerina/Module.md#setup-guide).
 
+The service URL must include the `/openai/v1` base path, for example `https://<resource-name>.openai.azure.com/openai/v1`. The API key is sent in the `api-key` header.
+
 ## Test Environments
 
 There are two test environments for running the `azure.openai.responses` connector tests. The default environment is a mock server for the Azure OpenAI Responses API. The other environment is the actual Azure OpenAI Responses API.
@@ -59,11 +61,11 @@ Create a `Config.toml` file in the `tests` directory and add your authentication
 
 ```toml
 isLiveServer = true
-token = "<your-azure-openai-api-key>"
-serviceUrl = "<your-azure-openai-endpoint-url>"
+apiKey = "<your-azure-openai-api-key>"
+serviceUrl = "https://<resource-name>.openai.azure.com/openai/v1"
 ```
 
-Alternatively, to test the API key authentication path, provide `apiKey` instead of (or in addition to) `token`.
+The live tests authenticate with the API key, which the connector sends in the `api-key` header. The `token` configurable holds a Microsoft Entra ID access token and is only exercised by the bearer token mock test, so it does not need to be set for a live run.
 
 ### Using Environment Variables
 
@@ -73,19 +75,19 @@ For Linux or macOS:
 
 ```bash
 export IS_LIVE_SERVER=true
-export AZURE_OPENAI_TOKEN="<your-azure-openai-api-key>"
-export AZURE_OPENAI_SERVICE_URL="<your-azure-openai-endpoint-url>"
-# Optional: to exercise the API key authentication path.
 export AZURE_OPENAI_API_KEY="<your-azure-openai-api-key>"
+export AZURE_OPENAI_SERVICE_URL="https://<resource-name>.openai.azure.com/openai/v1"
+# Optional: a Microsoft Entra ID access token, used only by the bearer token mock test.
+export AZURE_OPENAI_TOKEN="<your-entra-id-access-token>"
 ```
 
 For Windows:
 
 ```bash
 setx IS_LIVE_SERVER true
-setx AZURE_OPENAI_TOKEN <your-azure-openai-api-key>
-setx AZURE_OPENAI_SERVICE_URL <your-azure-openai-endpoint-url>
 setx AZURE_OPENAI_API_KEY <your-azure-openai-api-key>
+setx AZURE_OPENAI_SERVICE_URL https://<resource-name>.openai.azure.com/openai/v1
+setx AZURE_OPENAI_TOKEN <your-entra-id-access-token>
 ```
 
 Then, run the following command to execute the tests:

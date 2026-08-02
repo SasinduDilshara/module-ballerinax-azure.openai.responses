@@ -11,9 +11,11 @@ The `ballerinax/azure.openai.responses` connector provides practical examples il
 2. For each example, create a `Config.toml` file in the related directory. Here's an example of how your `Config.toml` file should look:
 
     ```toml
-    token = "<Azure OpenAI API Key>"
-    serviceUrl = "<Azure OpenAI Endpoint URL>"
+    apiKey = "<Azure OpenAI API Key>"
+    serviceUrl = "https://<resource-name>.openai.azure.com/openai/v1"
     ```
+
+    The API key is sent in the `api-key` header, and the service URL must include the `/openai/v1` base path.
 
 ## Running an example
 

@@ -174,13 +174,6 @@ public type OpenAIResponseTextParam record {
     OpenAIVerbosity? verbosity?;
 };
 
-# Represents the Queries record for the operation: cancelResponse
-public type CancelResponseQueries record {
-    # The explicit Azure AI Foundry Models API version to use for this request.
-    # `v1` if not otherwise specified.
-    AzureAIFoundryModelsApiVersion api\-version?;
-};
-
 # The conversation that this response belongs to.
 public type OpenAIConversationParam2 record {
     # The unique ID of the conversation.
@@ -270,8 +263,6 @@ public type CreateResponseQueries record {
 
 public type OpenAIToolType string|"function"|"file_search"|"computer"|"computer_use_preview"|"web_search"|"mcp"|"code_interpreter"|"image_generation"|"local_shell"|"shell"|"custom"|"namespace"|"tool_search"|"web_search_preview"|"apply_patch";
 
-public type OpenAIItemResourceType string|"message"|"output_message"|"file_search_call"|"computer_call"|"computer_call_output"|"web_search_call"|"function_call"|"function_call_output"|"tool_search_call"|"tool_search_output"|"reasoning"|"compaction"|"image_generation_call"|"code_interpreter_call"|"local_shell_call"|"local_shell_call_output"|"shell_call"|"shell_call_output"|"apply_patch_call"|"apply_patch_call_output"|"mcp_list_tools"|"mcp_approval_request"|"mcp_approval_response"|"mcp_call"|"custom_tool_call"|"custom_tool_call_output";
-
 public type AzureContentFilterCustomTopicResultDetails record {
     # A value indicating whether the topic is detected.
     boolean detected;
@@ -297,20 +288,6 @@ public type AzureContentFilterDetectionResult record {
     boolean detected;
 };
 
-# A list of Response items.
-public type OpenAIResponseItemList record {
-    # The type of object returned, must be `list`.
-    "list" 'object;
-    # A list of items used to generate this response.
-    OpenAIItemResource[] data;
-    # Whether there are more items available.
-    boolean has_more;
-    # The ID of the first item in the list.
-    string first_id;
-    # The ID of the last item in the list.
-    string last_id;
-};
-
 # Constrains effort on reasoning for
 # [reasoning models](https://platform.openai.com/docs/guides/reasoning).
 # Currently supported values are `none`, `minimal`, `low`, `medium`, `high`, and `xhigh`. Reducing
@@ -321,11 +298,6 @@ public type OpenAIResponseItemList record {
 # - The `gpt-5-pro` model defaults to (and only supports) `high` reasoning effort.
 # - `xhigh` is supported for all models after `gpt-5.1-codex-max`.
 public type OpenAIReasoningEffort "none"|"minimal"|"low"|"medium"|"high"|"xhigh"?;
-
-# Content item used to generate a response.
-public type OpenAIItemResource record {
-    OpenAIItemResourceType 'type;
-};
 
 # Set of 16 key-value pairs that can be attached to an object. This can be
 # useful for storing additional information about the object in a structured
@@ -370,7 +342,6 @@ public type OpenAITool record {
 # Provides API key configurations needed when communicating with a remote HTTP endpoint.
 public type ApiKeysConfig record {|
     string api\-key;
-    string authorization;
 |};
 
 # An array of tools the model may call while generating a response. You
@@ -401,13 +372,6 @@ public type AzureContentFilterResultsForResponsesAPIError record {
 # The conversation that this response belongs to. Items from this conversation are prepended to `input_items` for this response request.
 # Input items and output items from this response are automatically added to this conversation after this response completes.
 public type OpenAIConversationParam string|OpenAIConversationParam2;
-
-# Represents the Queries record for the operation: deleteResponse
-public type DeleteResponseQueries record {
-    # The explicit Azure AI Foundry Models API version to use for this request.
-    # `v1` if not otherwise specified.
-    AzureAIFoundryModelsApiVersion api\-version?;
-};
 
 # A collection of true/false filtering results for configured custom topics.
 public type AzureContentFilterCustomTopicResult record {
@@ -502,6 +466,11 @@ public type InlineResponse200 record {
     #   supported in SDKs.
     OpenAIOutputItem[] output;
     string|OpenAIInputItem[]? instructions;
+    # SDK-only convenience property; it is **not** part of the REST payload.
+    #   The official OpenAI SDKs compute it on the client side by concatenating the
+    #   `text` of every `output_text` content part in `output`. The service does not
+    #   send this field, so it is nil on responses returned by this connector.
+    #   Read the generated text from the `output` array instead.
     string? output_text?;
     # Represents token usage details including input tokens, output tokens,
     # a breakdown of output tokens, and the total tokens used.
@@ -527,44 +496,8 @@ public type AzureContentFilterForResponsesAPI record {
     string tool_call_id?;
 };
 
-# Represents the Queries record for the operation: listInputItems
-public type ListInputItemsQueries record {
-    # The explicit Azure AI Foundry Models API version to use for this request.
-    # `v1` if not otherwise specified.
-    AzureAIFoundryModelsApiVersion api\-version?;
-    # A cursor for use in pagination. `before` is an object ID that defines your place in the list.
-    # For instance, if you make a list request and receive 100 objects, ending with obj_foo, your
-    # subsequent call can include before=obj_foo in order to fetch the previous page of the list.
-    string before?;
-    # A limit on the number of objects to be returned. Limit can range between 1 and 100, and the
-    # default is 20.
-    int:Signed32 'limit = 20;
-    # A cursor for use in pagination. `after` is an object ID that defines your place in the list.
-    # For instance, if you make a list request and receive 100 objects, ending with obj_foo, your
-    # subsequent call can include after=obj_foo in order to fetch the next page of the list.
-    string after?;
-    # Sort order by the `created_at` timestamp of the objects. `asc` for ascending order and`desc`
-    # for descending order.
-    "asc"|"desc" 'order?;
-};
-
 public type OpenAIResponseIncompleteDetails record {
     "max_output_tokens"|"content_filter" reason?;
-};
-
-# Represents the Queries record for the operation: getResponse
-public type GetResponseQueries record {
-    # The explicit Azure AI Foundry Models API version to use for this request.
-    # `v1` if not otherwise specified.
-    AzureAIFoundryModelsApiVersion api\-version?;
-    # If set to true, the model response data will be streamed to the client as it is generated using server-sent events.
-    boolean 'stream?;
-    # The sequence number of the event after which to start streaming.
-    int:Signed32 starting_after?;
-    # Additional fields to include in the response. See the include parameter for Response creation above for more information.
-    OpenAIIncludeEnum[] include\[\] = [];
-    # When true, stream obfuscation will be enabled. Stream obfuscation adds random characters to an `obfuscation` field on streaming delta events to normalize payload sizes as a mitigation to certain side-channel attacks. These obfuscation fields are included by default, but add a small amount of overhead to the data stream. You can set `include_obfuscation` to false to optimize for bandwidth if you trust the network links between your application and the OpenAI API.
-    boolean include_obfuscation = true;
 };
 
 public type AzureContentFilterBlocklistResultDetails record {
@@ -668,12 +601,6 @@ public type AzureContentFilterBlocklistResult record {
     boolean filtered;
     # The pairs of individual blocklist IDs and whether they resulted in a filtering action.
     AzureContentFilterBlocklistResultDetails[] details?;
-};
-
-public type InlineResponse2001 record {
-    "response.deleted" 'object;
-    string id;
-    true deleted;
 };
 
 # An item representing part of the context for the response to be

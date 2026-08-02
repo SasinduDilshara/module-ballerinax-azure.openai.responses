@@ -10,11 +10,13 @@
 
 The `ballerinax/azure.openai.responses` package offers functionality to connect and interact with the [Responses API](https://learn.microsoft.com/en-us/rest/api/aifoundry/) of the Azure AI Foundry Models Service. The Responses API is a stateful API that provides a more powerful and flexible way to build AI applications, supporting features like multi-turn conversations, built-in tools (web search, file search, code interpreter), and background processing.
 
+This connector exposes the create model response operation (`POST /responses`).
+
 ## Setup guide
 
 To use the Azure OpenAI Responses Connector, you must have access to an Azure OpenAI resource through a [Microsoft Azure account](https://azure.microsoft.com). If you do not have an Azure account, you can sign up for one [here](https://azure.microsoft.com/en-us/free/).
 
-#### Create an Azure OpenAI resource and obtain the API key
+### Create an Azure OpenAI resource and obtain the API key
 
 1. Sign in to the [Azure Portal](https://portal.azure.com).
 
@@ -27,6 +29,22 @@ To use the Azure OpenAI Responses Connector, you must have access to an Azure Op
 5. In the left-hand menu, go to **Resource Management** -> **Keys and Endpoint**.
 
 6. Copy one of the provided keys (Key 1 or Key 2) and the endpoint URL. Store them securely to use in your application.
+
+### Derive the service URL
+
+The Responses API is served from the `/openai/v1` base path, and the connector appends only the resource path (such as `/responses`) to the URL you supply. Append `openai/v1` to the endpoint copied from the portal to form the service URL:
+
+```text
+https://<resource-name>.openai.azure.com/openai/v1
+```
+
+If the resource was created as an Azure AI Foundry resource, use its host instead:
+
+```text
+https://<resource-name>.services.ai.azure.com/openai/v1
+```
+
+> **Note:** Passing the bare endpoint copied from the portal (`https://<resource-name>.openai.azure.com`) sends requests to `/responses` rather than `/openai/v1/responses`, which fails with a `404`.
 
 ## Quickstart
 
@@ -43,24 +61,35 @@ import ballerinax/azure.openai.responses;
 
 ### Step 2: Create a new connector instance
 
-Create a `responses:Client` with the obtained API key and your Azure OpenAI resource endpoint.
+Create a `responses:Client` with the API key and the service URL derived in the setup guide. The connector sends the key in the `api-key` header, which is the header Azure expects for API key authentication.
 
 ```ballerina
-configurable string token = ?;
+configurable string apiKey = ?;
 configurable string serviceUrl = ?;
 
 final responses:Client azureOpenAI = check new ({
     auth: {
-        token
+        api\-key: apiKey
     }
 }, serviceUrl);
 ```
+
+Supply the values through a `Config.toml` file placed alongside the `Ballerina.toml` file:
+
+```toml
+apiKey = "<your-azure-openai-api-key>"
+serviceUrl = "https://<resource-name>.openai.azure.com/openai/v1"
+```
+
+> **Note:** An Azure OpenAI API key must not be passed as `token`. Azure accepts keys only in the `api-key` header, so sending a key as a bearer token fails with a `401`.
 
 ### Step 3: Invoke the connector operation
 
 Now, you can utilize available connector operations.
 
 #### Create a model response
+
+The generated text is carried by the `output` array of the response. Each output item holds a list of content parts, and the assistant's text is in the parts of type `output_text`.
 
 ```ballerina
 public function main() returns error? {
@@ -71,9 +100,22 @@ public function main() returns error? {
     };
 
     responses:InlineResponse200 response = check azureOpenAI->/responses.post(request);
-    io:println(response?.output_text);
+
+    foreach responses:OpenAIOutputItem item in response.output {
+        anydata content = item["content"];
+        if content !is anydata[] {
+            continue;
+        }
+        foreach anydata part in content {
+            if part is map<anydata> && part["type"] == "output_text" {
+                io:println(part["text"]);
+            }
+        }
+    }
 }
 ```
+
+> **Note:** The `output_text` field on the response is a convenience property that the official OpenAI SDKs compute on the client side by joining the `output_text` content parts. The REST API does not send it, so it is nil on responses returned by this connector — read the text from `output` as shown above.
 
 ### Step 4: Run the Ballerina application
 

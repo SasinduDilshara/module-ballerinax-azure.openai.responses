@@ -27,3 +27,6 @@ Config.toml
 target
 generated
 build
+
+# macOS Finder metadata
+.DS_Store

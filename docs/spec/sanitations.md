@@ -1,6 +1,6 @@
 _Authors_: @ballerina-platform \
 _Created_: 2026/03/03 \
-_Updated_: 2026/03/03 \
+_Updated_: 2026/08/03 \
 _Edition_: Swan Lake
 
 # Sanitation for OpenAPI specification
@@ -229,6 +229,67 @@ These changes are done in order to improve the overall usability, and as workaro
       | Schemas used only by the removed operations | 4 | `InlineResponse2001`, `OpenAIResponseItemList`, `OpenAIItemResource`, `OpenAIItemResourceType` |
       | Content schemas orphaned by the subtype removal | 11 | `OpenAIInputTextContent`, `OpenAIOutputContent`, `OpenAIAnnotation`, `OpenAIResponseLogProb` |
       | Duplicate of the retained response schema | 1 | `OpenAIResponse` (structurally identical to `InlineResponse200`) |
+
+15. **Removed `default` from the request-body parameters of `OpenAICreateResponse`**:
+
+    - **Changed Schema**: `OpenAICreateResponse` — the `temperature`, `top_p`, `truncation`,
+      `parallel_tool_calls` and `store` properties.
+    - **Original**:
+
+      ```yaml
+      temperature:
+        default: 1
+        type: number
+        nullable: true
+      top_p:
+        default: 1
+        type: number
+        nullable: true
+      truncation:
+        enum: [auto, disabled]
+        default: disabled
+        type: string
+        nullable: true
+      parallel_tool_calls:
+        default: true
+        type: boolean
+        nullable: true
+      store:
+        default: true
+        type: boolean
+        nullable: true
+      ```
+
+    - **Updated**: Removed the `default` line from each of the five properties. The types, enum
+      members, `nullable` markers and descriptions are unchanged.
+
+    - **Reason**: `default:` on a non-`required` property makes the Ballerina OpenAPI tool generate
+      a required-with-default field (`decimal? temperature = 1;`) rather than an optional one. Such
+      a field is always present in the record value, so `jsondata:toJson(payload)`
+      (`ballerina/client.bal`) emitted it on every call: `->/responses.post({model: "gpt-5",
+      input: "hi"})` went on the wire as `{"model":"gpt-5","input":"hi","temperature":1.0,
+      "top_p":1.0,"parallel_tool_calls":true,"store":true,"truncation":"disabled"}`. Azure
+      documents `temperature` and `top_p` as **not supported** for reasoning models — *"The
+      following are currently unsupported with reasoning models: `temperature`, `top_p`,
+      `presence_penalty`, `frequency_penalty`, `logprobs`, `top_logprobs`, `logit_bias`,
+      `max_tokens`"*
+      ([Azure OpenAI reasoning models](https://learn.microsoft.com/en-us/azure/ai-foundry/openai/how-to/reasoning)) —
+      and the strict families reject the *presence* of the key with
+      `400 Unsupported parameter: 'temperature' is not supported with this model.` even when the
+      value is the default `1`. That made every GPT-5-series and o-series deployment
+      uncallable. `parallel_tool_calls` is additionally rejected when no `tools` are present
+      (`400 - "'parallel_tool_calls' is only allowed when 'tools' are specified."`). Removing the
+      defaults makes the tool generate plain optional fields (`decimal? temperature?;`), which are
+      serialized only when the caller sets them. All five are optional upstream with no
+      requirement to send them, and the values being sent were the service-side defaults, so
+      behaviour for the GPT-4 families is unchanged.
+
+    - **Note**: the identical `default` entries on `InlineResponse200` (`temperature`, `top_p`,
+      `truncation`, `parallel_tool_calls`) were deliberately **kept**. That schema is response-only
+      and is never serialized onto a request, and the defaults make its data binding tolerant of a
+      payload that omits those keys — dropping them would turn `temperature` into a
+      required-without-default field, which Ballerina data binding rejects on an absent key even
+      when the field type is nilable.
 
 ## OpenAPI cli command
 

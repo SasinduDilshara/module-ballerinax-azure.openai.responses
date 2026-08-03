@@ -393,11 +393,9 @@ components:
           type: integer
           nullable: true
         temperature:
-          default: 1
           type: number
           nullable: true
         top_p:
-          default: 1
           type: number
           nullable: true
         user:
@@ -462,7 +460,6 @@ components:
         prompt:
           $ref: '#/components/schemas/OpenAIPrompt'
         truncation:
-          default: disabled
           type: string
           enum:
           - auto
@@ -476,11 +473,9 @@ components:
             $ref: '#/components/schemas/OpenAIIncludeEnum'
           nullable: true
         parallel_tool_calls:
-          default: true
           type: boolean
           nullable: true
         store:
-          default: true
           type: boolean
           nullable: true
         instructions:

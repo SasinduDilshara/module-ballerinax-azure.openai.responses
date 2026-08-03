@@ -55,8 +55,8 @@ public type OpenAICreateResponse record {
     # with a maximum length of 512 characters.
     OpenAIMetadata metadata?;
     int? top_logprobs?;
-    decimal? temperature = 1;
-    decimal? top_p = 1;
+    decimal? temperature?;
+    decimal? top_p?;
     # This field is being replaced by `safety_identifier` and `prompt_cache_key`. Use `prompt_cache_key` instead to maintain caching optimizations.
     #   A stable identifier for your end-users.
     #   Used to boost cache hit rates by better bucketing similar requests and  to help OpenAI detect and prevent abuse. [Learn more](/docs/guides/safety-best-practices#safety-identifiers).
@@ -108,7 +108,7 @@ public type OpenAICreateResponse record {
     # Reference to a prompt template and its variables.
     # [Learn more](/docs/guides/text?api-mode=responses#reusable-prompts).
     OpenAIPrompt prompt?;
-    "auto"|"disabled"? truncation = "disabled";
+    "auto"|"disabled"? truncation?;
     # Text, image, or file inputs to the model, used to generate a response.
     # Learn more:
     # - [Text inputs and outputs](/docs/guides/text)
@@ -118,8 +118,8 @@ public type OpenAICreateResponse record {
     # - [Function calling](/docs/guides/function-calling)
     OpenAIInputParam input?;
     OpenAIIncludeEnum[]? include?;
-    boolean? parallel_tool_calls = true;
-    boolean? store = true;
+    boolean? parallel_tool_calls?;
+    boolean? store?;
     string? instructions?;
     boolean? 'stream?;
     # Options for streaming responses. Only set this when you set `stream: true`.
